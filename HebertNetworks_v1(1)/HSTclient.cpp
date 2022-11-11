@@ -18,7 +18,7 @@ using namespace std;
 int sock;
 int valueRead; // what is this variable?
 //int packetSize;
-//int windowSize;
+int windowSize;
 //int seqrange;
 int nextSequenceNum = 0;
 //string line;
@@ -64,7 +64,7 @@ int UserInputPromptPort()
 string UserInputPromptFile()
 {
         string file;
-        cout << " What is the name of your file?: ";
+        cout << "Enter the name of your file: ";
         cin >> file;
         return file;
 }
@@ -72,9 +72,27 @@ string UserInputPromptFile()
 int UserInputPromptPacket()
 {
         int packet;
-        cout << "What is the packet size?: ";
+        cout << "Enter the packet size or -1 for default (" << PACKET_SIZE << "): ";
         cin >> packet;
+        if (packet < 0)
+        {
+                packet = PACKET_SIZE;
+        }
+        
         return packet;
+}
+
+int UserInputPromptWindow()
+{
+        int window;
+        cout << "Enter the window size or -1 for default (" << WINDOW_SIZE << "): ";
+        cin >> window;
+        if (window < 0)
+        {
+                window = WINDOW_SIZE;
+        }
+        
+        return window;
 }
 
 int CreateSocket(int port, string ip)
@@ -107,15 +125,23 @@ int CreateSocket(int port, string ip)
 
 
 
-int main(int argc, char const *argv[]) {
-        int portNumber;
-        string IPaddress = "";
 
-        IPaddress = UserInputPromptAddr();
-	portNumber = UserInputPromptPort();
-        CreateSocket(portNumber, IPaddress);
+
+int main(int argc, char const *argv[]) {
+
+        string IPaddress = UserInputPromptAddr();
+	int portNumber = UserInputPromptPort();
         string fileName = UserInputPromptFile();
         int packetSize = UserInputPromptPacket();
+        int windowSize = UserInputPromptWindow();
+        
+        // socket creation failed, exit the program
+        if (CreateSocket(portNumber, IPaddress) < 0) {
+                return 0;
+        }
+
+        int header[2] = {packetSize, windowSize};
+
 
 
         pFile = fopen(fileName.c_str(), "r");
