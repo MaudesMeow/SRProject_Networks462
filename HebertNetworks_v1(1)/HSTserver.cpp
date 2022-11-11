@@ -25,9 +25,10 @@ using std::chrono::milliseconds;
 using namespace std::literals::chrono_literals;
 using std::this_thread::sleep_for;
 
-int portNumber;
+//int portNumber;
 int sock;
 string fileName;
+//because you can't actually return these, this is nessecary.
 ofstream outFile;
 int server_fd;
 int new_socket;
@@ -47,28 +48,26 @@ struct Packet {
 };
 
 
-
-void UserInputPromptPort()
-
-{
+//prompts user for port number, and returns user input
+int UserInputPromptPort(){
+        int portNumber;
 	cout << "Enter port number: ";
         cin >> portNumber;
+        return portNumber
 	
 }
 
 
 
-void UserInputPromptFile()
+void UserInputPromptFile() {
 
-{
         cout << " What is the name of your file you would like to create (use with the extentsion .txt)?: ";
         cin >> fileName;
-		ofstream outFile(fileName);	
+	ofstream outFile(fileName);	
 }
 
 
-void CreateSocket()
-{
+void CreateSocket(int portNumber){
 		sock = 0;
         struct sockaddr_in address;
         int opt = 1;
@@ -110,12 +109,11 @@ void CreateSocket()
 
 int main(int argc, char const *argv[]) {
         
-        UserInputPromptPort();
+        int portNumber = UserInputPromptPort();
 
         UserInputPromptFile();
         
-        
-		CreateSocket();
+	CreateSocket();
         
 
         //start is the starting point of the clock as it is before starting communication
