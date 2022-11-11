@@ -118,11 +118,14 @@ int main(int argc, char const *argv[]) {
 		CreateSocket();
         
 
-        
+        //start is the starting point of the clock as it is before starting communication
         time_point<Clock> start = Clock::now();
+        //end is the point of the clock as it is every moment. Communication ends once enough
+        //time has passed.
         time_point<Clock> end = Clock::now();
         auto diff = duration_cast<milliseconds>(end-start);
 
+        //while the difference between the start time and the end time is < 10,000 milliseconds
         while(diff.count() < 10000) {
                 diff = duration_cast<milliseconds>(end-start);
                 end = Clock::now();
@@ -130,7 +133,9 @@ int main(int argc, char const *argv[]) {
                 checkStatus = 0;
                 memset(buf, 0, sizeof(buf));
                 ioctl(new_socket, FIONREAD, &checkStatus);
+                //if the socket is good,
                 if(checkStatus > 0) {
+                        //if we have recieved a packet, write it to the file, and print that we did it.
                         if(n = recv(new_socket, &bufferSize, sizeof(bufferSize), 0)) {
                                 char buf[bufferSize];
                                 n = recv(new_socket, buf, sizeof(buf), 0);

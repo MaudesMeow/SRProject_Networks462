@@ -38,7 +38,7 @@ typedef struct Packet{
                 string inside;
 }pktype;
 
-
+//prompts the user for the IP address we're going to use to send packets.
 string UserInputPromptAddr()
 {
         string ip;
@@ -47,6 +47,7 @@ string UserInputPromptAddr()
         return ip;	
 }
 
+//prompts te user for the port number
 int UserInputPromptPort()
 {
         int port;
@@ -60,7 +61,7 @@ int UserInputPromptPort()
         return port;
 }
 
-
+//returns name of input file.
 string UserInputPromptFile()
 {
         string file;
@@ -69,6 +70,7 @@ string UserInputPromptFile()
         return file;
 }
 
+//returns packet size from user input
 int UserInputPromptPacket()
 {
         int packet;
@@ -77,6 +79,8 @@ int UserInputPromptPacket()
         return packet;
 }
 
+//creates a socket using a port number and an IP address. 
+//returns 0 if success, -1 if failure, and prints corrisponding error message.
 int CreateSocket(int port, string ip)
 {
 	
@@ -111,25 +115,34 @@ int main(int argc, char const *argv[]) {
         int portNumber;
         string IPaddress = "";
 
+        //creates socket, gets file and packet size
         IPaddress = UserInputPromptAddr();
 	portNumber = UserInputPromptPort();
         CreateSocket(portNumber, IPaddress);
         string fileName = UserInputPromptFile();
         int packetSize = UserInputPromptPacket();
 
-
+        //creates a file to print to?
         pFile = fopen(fileName.c_str(), "r");
-        ifstream is(fileName);
+        //creates an ifstream named "is" that reads from the user's selected file
+        ifstream is(fileName);//consider changing name of the ifstream so that it isn't called "is"
         char placeHolder;
         ostringstream temp;
         string fileInput;
 
+        //while we haven't hit the end of the file, start sending packets.
         while(!is.eof()){
+
                 fileInput.clear();
                 //payOut.clear();
+
+                //pull characters from is until fileInput == one packet.
                 for (int i = 0; i < packetSize && is.get(placeHolder); i++){
                         fileInput.push_back(placeHolder);
                 }
+
+                //if fileInput isn't empty, we have a packet to send.
+                //send the packet and its size to the server, and tell the user we did it.
                 if(!fileInput.empty()){
                         //payOut.append(fileInput);
                         nextSequenceNum++;
@@ -140,6 +153,8 @@ int main(int argc, char const *argv[]) {
                 }
 
         }
+
+        //we're done sending packets. finish everything up.
         cout << "Packets sent. Complete"<< endl;
         string verify = "md5sum " + fileName;
         system(verify.c_str());
