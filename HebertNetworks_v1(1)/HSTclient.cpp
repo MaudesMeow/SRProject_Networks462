@@ -15,20 +15,19 @@ using namespace std;
 
 //int portNumber;
 //string IPaddress;
-int sock;
-int valueRead; // what is this variable?
+//int sock;               
+int valueRead;          // what is this variable?
 //int packetSize;
-int windowSize;
+//int windowSize;
 //int seqrange;
-int nextSequenceNum = 0;
+//int nextSequenceNum = 0;
 //string line;
 //string reset;
 //string fileName;
 //string payOut = "";
 //string fileInput;
-FILE * pFile;
-
-string empty = "\n";
+//FILE * pFile;
+//string empty = "\n";
 
 
 typedef struct Packet{
@@ -84,6 +83,7 @@ int UserInputPromptPacket()
         return packet;
 }
 
+//returns window size from user input
 int UserInputPromptWindow()
 {
         int window;
@@ -98,11 +98,10 @@ int UserInputPromptWindow()
 }
 
 //creates a socket using a port number and an IP address. 
-//returns 0 if success, -1 if failure, and prints corrisponding error message.
+//returns the file descriptor for the socket if success, -1 if failure, and prints corresponding error message.
 int CreateSocket(int port, string ip)
 {
-	
-	sock = 0, valueRead;
+	int sock = 0, valueRead;
 
         struct sockaddr_in serv_addr;
         char buffer[1024] = {0};
@@ -124,11 +123,8 @@ int CreateSocket(int port, string ip)
                 printf("\nConnection Failed \n");
                 return -1;
         }
-		return 0;
+		return sock;
 }
-
-
-
 
 
 int main(int argc, char const *argv[]) {
@@ -141,48 +137,78 @@ int main(int argc, char const *argv[]) {
         int windowSize = UserInputPromptWindow();
         
         // socket creation failed, exit the program
-        if (CreateSocket(portNumber, IPaddress) < 0) {
+        int sock;
+        if (sock = CreateSocket(portNumber, IPaddress) < 0) {
                 return 0;
         }
 
+// send the packet size and window size to the server so they know what to use
+        int checkStatus = 0;
         int header[2] = {packetSize, windowSize};
+        send(sock, &header, sizeof(header), 0);
 
-
-        //creates a file to print to?
-        pFile = fopen(fileName.c_str(), "r");
-        //creates an ifstream named "is" that reads from the user's selected file
-        ifstream is(fileName);//consider changing name of the ifstream so that it isn't called "is"
-        char placeHolder;
-        ostringstream temp;
-        string fileInput;
-
-        //while we haven't hit the end of the file, start sending packets.
-        while(!is.eof()){
-
-                fileInput.clear();
-                //payOut.clear();
-
-                //pull characters from is until fileInput == one packet.
-                for (int i = 0; i < packetSize && is.get(placeHolder); i++){
-                        fileInput.push_back(placeHolder);
-                }
-
-                //if fileInput isn't empty, we have a packet to send.
-                //send the packet and its size to the server, and tell the user we did it.
-                if(!fileInput.empty()){
-                        //payOut.append(fileInput);
-                        nextSequenceNum++;
-                        int bufsize = fileInput.length();
-                        send(sock, &bufsize, sizeof(bufsize), 0);
-                        send(sock, fileInput.data(), fileInput.size(), 0);
-                        cout << "Packet " << nextSequenceNum << " sent: " << endl;
-                }
-
+        // ioctl makes sure there is information to read. Stores bytes to read in checkStatus
+        ioctl(sock, FIONREAD, &checkStatus);
+        int *ackHeaderRecv = {0};
+        if (checkStatus > 0)
+        {
+                // server sends back 1 for successful reception of header information
+                recv(sock, ackHeaderRecv, sizeof(ackHeaderRecv), 0);
+                
+                /* TODO: 
+                        have server receive this header and send the ack */
         }
+        
+        // the server got the header, so we are good to continue sending the file.
+        if (ackHeaderRecv[0] > 0)
+        {
+                //creates a file to print to?
+                FILE *pFile = fopen(fileName.c_str(), "r");
+                //creates an ifstream named "readStream" that reads from the user's selected file
+                ifstream readStream(fileName);
+                char placeHolder;
+                ostringstream temp;
+                string fileInput;
 
-        //we're done sending packets. finish everything up.
-        cout << "Packets sent. Complete"<< endl;
-        string verify = "md5sum " + fileName;
-        system(verify.c_str());
+                //while we haven't hit the end of the file, start sending packets.
+                while(!readStream.eof()){
+
+                        fileInput.clear();
+                        //payOut.clear();
+
+                        //pull characters from readStream until fileInput == one packet.
+                        for (int i = 0; i < packetSize && readStream.get(placeHolder); i++){
+                                fileInput.push_back(placeHolder);
+                        }
+
+                        int nextSequenceNum = 0;
+                        //if fileInput isn't empty, we have a packet to send.
+                        //send the packet and its size to the server, and tell the user we did it.
+                        if(!fileInput.empty()){
+                                //payOut.append(fileInput);
+                                nextSequenceNum++;
+                                int bufsize = fileInput.length();
+                                send(sock, &bufsize, sizeof(bufsize), 0);
+                                send(sock, fileInput.data(), fileInput.size(), 0);
+                                cout << "Packet " << nextSequenceNum << " sent: " << endl;
+                        }
+
+                }
+
+                //we're done sending packets. finish everything up.
+                cout << "Packets sent. Complete"<< endl;
+                string verify = "md5sum " + fileName;
+                system(verify.c_str());
+        } 
+        // server never acked the header, so we don't know that the connection is solid.
+        else {
+                cout << "Couldn't verify header info with server, exiting now." << endl;
+                return 0;
+        }
+        
+        
+
+        
+        
 
 }
