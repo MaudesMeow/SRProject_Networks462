@@ -1,6 +1,6 @@
+#define HEADER_DONE false
 
 
-
-void UserInputPromptPort();
+int UserInputPromptPort();
 void UserInputPromptFile();
-int CreateSocket();
+int CreateSocket(int portNumber);

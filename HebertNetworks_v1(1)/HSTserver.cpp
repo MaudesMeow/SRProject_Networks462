@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string>
+#include "HSTserver.h"
 
 #include <sys/ioctl.h>
 #include <vector>
@@ -53,7 +54,7 @@ int UserInputPromptPort(){
         int portNumber;
 	cout << "Enter port number: ";
         cin >> portNumber;
-        return portNumber
+        return portNumber;
 	
 }
 
@@ -67,7 +68,7 @@ void UserInputPromptFile() {
 }
 
 
-void CreateSocket(int portNumber){
+int CreateSocket(int portNumber){
 		sock = 0;
         struct sockaddr_in address;
         int opt = 1;
@@ -113,7 +114,7 @@ int main(int argc, char const *argv[]) {
 
         UserInputPromptFile();
         
-	CreateSocket();
+	CreateSocket(portNumber);
 
         //start is the starting point of the clock as it is before starting communication
         time_point<Clock> start = Clock::now();
@@ -121,35 +122,58 @@ int main(int argc, char const *argv[]) {
         //time has passed.
         time_point<Clock> end = Clock::now();
         auto diff = duration_cast<milliseconds>(end-start);
-
-        int n;
-        bool gotHeader = false;
-        //packet recieved by the server
-        char recievedPacket[0]; //we need this as long as we are allocating memory for it with memset in the while loop
-        //recieve header and send ack
-        while(!gotHeader){
-
-                //if we've recieved a packet
-                if(n = recv(new_socket, &packetSize, sizeof(packetSize), 0)) {
-                        char recievedPacket[packetSize];
-                        n = recv(new_socket, recievedPacket, sizeof(recievedPacket), 0);
-                                received.append(recievedPacket, recievedPacket+n);
-                                if(received.length() != 0){
-                                        //ideas on how to read: recv() or use read() with an ifstream
-                                        //honestly, IDK which one of these works, or even how to get our information from them.
-                                }
-
-                }
-
+    
+        //bool gotHeader = false;
+        
+        int headerStatus = 0;
+        // ioctl makes sure there is information to read. Stores bytes to read in checkStatus
+        ioctl(sock, FIONREAD, &headerStatus);
+        int *headerRecv = {0};
+        if (headerStatus > 0)
+        {
+                // client sends information on packetSize, windowSize, and sequencNumSize
+                recv(sock, headerRecv, sizeof(headerRecv), 0);
+                
+                /*TODO: 
+                        do something with the header values (store them in correct variables)
+                        */
         }
+        
+        if (headerRecv[0] > 0)
+        {
+                // send ack for header here
+                int ack = 1;
+                send(sock, &ack, sizeof(ack), 0);
+        }
+        
+        // //recieve header and send ack (****Don't think this is needed anymore****)
+        // while(!gotHeader){}
+               
+        //         //if we've recieved a packet
+        //         if(n = recv(new_socket, &packetSize, sizeof(packetSize), 0)) {
+        //                 char recievedPacket[packetSize];
+        //                 n = recv(new_socket, recievedPacket, sizeof(recievedPacket), 0);
+        //                         received.append(recievedPacket, recievedPacket+n);
+        //                         if(received.length() != 0){
+        //                                 //ideas on how to read: recv() or use read() with an ifstream
+        //                                 //honestly, IDK which one of these works, or even how to get our information from them.
+        //                         }
+
+        //         }
+
+        // }
+
+        string received = "";
+        int n;
+        char *recievedPacket;
+        
 
 
         //while the difference between the start time and the end time is < 10,000 milliseconds
         while(diff.count() < 10000) {
                 diff = duration_cast<milliseconds>(end-start);
                 end = Clock::now();
-                string received = "";
-                //received.clear(); old
+                received.clear();
                 int checkStatus = 0;
                 memset(recievedPacket, 0, sizeof(recievedPacket)); //allocates memory for recievedPacket. Debatable if we need to do this at all.
                 ioctl(new_socket, FIONREAD, &checkStatus); //used to check if the socket is working.
@@ -174,6 +198,6 @@ int main(int argc, char const *argv[]) {
         }
         string check = "md5sum " + fileName;
         outFile.close();
-        system(check.c_str());
+        std::system(check.c_str());
 }
 

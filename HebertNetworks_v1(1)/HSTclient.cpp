@@ -97,6 +97,20 @@ int UserInputPromptWindow()
         return window;
 }
 
+//returns sequence number size from user input
+int UserInputPromptSequence()
+{
+        int sequence;
+        cout << "Enter the sequence number size or -1 for default (" << SEQUENCE_SIZE << "): ";
+        cin >> sequence;
+        if (sequence < 0)
+        {
+                sequence = SEQUENCE_SIZE;
+        }
+        
+        return sequence;
+}
+
 //creates a socket using a port number and an IP address. 
 //returns the file descriptor for the socket if success, -1 if failure, and prints corresponding error message.
 int CreateSocket(int port, string ip)
@@ -135,6 +149,8 @@ int main(int argc, char const *argv[]) {
         string fileName = UserInputPromptFile();
         int packetSize = UserInputPromptPacket();
         int windowSize = UserInputPromptWindow();
+        int sequenceNumSize = UserInputPromptSequence();
+
         
         // socket creation failed, exit the program (sockets are represented by integers)
         int sock;
@@ -144,7 +160,9 @@ int main(int argc, char const *argv[]) {
 
 // send the packet size and window size to the server so they know what to use
         int checkStatus = 0;
-        int header[2] = {packetSize, windowSize};
+        int header[3] = {packetSize, windowSize, sequenceNumSize};
+
+        //send header here *************
         send(sock, &header, sizeof(header), 0);
 
         // ioctl makes sure there is information to read. Stores bytes to read in checkStatus
@@ -156,6 +174,7 @@ int main(int argc, char const *argv[]) {
                 recv(sock, ackHeaderRecv, sizeof(ackHeaderRecv), 0);
                 
                 /* TODO: 
+                        Timeout implementation here at some point
                         have server receive this header and send the ack */
         }
         
