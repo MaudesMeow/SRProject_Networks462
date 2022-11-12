@@ -34,11 +34,11 @@ int server_fd;
 int new_socket;
 int valread;
 int numOfPackets = 0;
-int bufferSize = 0;
-int checkStatus;
+int packetSize = 0;
+//int checkStatus;
 string received;
 char buf[0];
-int n;
+//int n;
 
 struct Packet {
         string packetNum;
@@ -114,7 +114,6 @@ int main(int argc, char const *argv[]) {
         UserInputPromptFile();
         
 	CreateSocket();
-        
 
         //start is the starting point of the clock as it is before starting communication
         time_point<Clock> start = Clock::now();
@@ -123,25 +122,30 @@ int main(int argc, char const *argv[]) {
         time_point<Clock> end = Clock::now();
         auto diff = duration_cast<milliseconds>(end-start);
 
+        int n;
+
         //while the difference between the start time and the end time is < 10,000 milliseconds
         while(diff.count() < 10000) {
                 diff = duration_cast<milliseconds>(end-start);
                 end = Clock::now();
                 received.clear();
-                checkStatus = 0;
-                memset(buf, 0, sizeof(buf));
-                ioctl(new_socket, FIONREAD, &checkStatus);
+                int checkStatus = 0;
+                memset(buf, 0, sizeof(buf)); //allocates memory for buf. Debatable if we need to do this at all.
+                ioctl(new_socket, FIONREAD, &checkStatus); //used to check if the socket is working.
                 //if the socket is good,
                 if(checkStatus > 0) {
-                        //if we have recieved a packet, write it to the file, and print that we did it.
-                        if(n = recv(new_socket, &bufferSize, sizeof(bufferSize), 0)) {
-                                char buf[bufferSize];
+                        //recv is a funciton that checks if the socket has recieved something from the client.
+                        if(n = recv(new_socket, &packetSize, sizeof(packetSize), 0)) {
+                                char buf[packetSize];
                                 n = recv(new_socket, buf, sizeof(buf), 0);
                                 received.append(buf, buf+n);
                                 if(received.length() != 0){
                                         numOfPackets++;
+                                        //prints to console which packet was recieved.
                                         cout << "Packet " << numOfPackets << " received: " << endl;
+                                        //write to the outfile
                                         outFile << received;
+                                        //reset the start time so that the server won't timeout.
                                         start = Clock::now();
                                 }
                         }
