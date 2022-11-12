@@ -136,7 +136,7 @@ int main(int argc, char const *argv[]) {
         int packetSize = UserInputPromptPacket();
         int windowSize = UserInputPromptWindow();
         
-        // socket creation failed, exit the program
+        // socket creation failed, exit the program (sockets are represented by integers)
         int sock;
         if (sock = CreateSocket(portNumber, IPaddress) < 0) {
                 return 0;

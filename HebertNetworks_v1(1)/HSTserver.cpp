@@ -36,8 +36,8 @@ int valread;
 int numOfPackets = 0;
 int packetSize = 0;
 //int checkStatus;
-string received;
-char buf[0];
+//string received;
+//char recievedPacket[0];
 //int n;
 
 struct Packet {
@@ -123,22 +123,43 @@ int main(int argc, char const *argv[]) {
         auto diff = duration_cast<milliseconds>(end-start);
 
         int n;
+        bool gotHeader = false;
+        //packet recieved by the server
+        char recievedPacket[0]; //we need this as long as we are allocating memory for it with memset in the while loop
+        //recieve header and send ack
+        while(!gotHeader){
+
+                //if we've recieved a packet
+                if(n = recv(new_socket, &packetSize, sizeof(packetSize), 0)) {
+                        char recievedPacket[packetSize];
+                        n = recv(new_socket, recievedPacket, sizeof(recievedPacket), 0);
+                                received.append(recievedPacket, recievedPacket+n);
+                                if(received.length() != 0){
+                                        //ideas on how to read: recv() or use read() with an ifstream
+                                        //honestly, IDK which one of these works, or even how to get our information from them.
+                                }
+
+                }
+
+        }
+
 
         //while the difference between the start time and the end time is < 10,000 milliseconds
         while(diff.count() < 10000) {
                 diff = duration_cast<milliseconds>(end-start);
                 end = Clock::now();
-                received.clear();
+                string received = "";
+                //received.clear(); old
                 int checkStatus = 0;
-                memset(buf, 0, sizeof(buf)); //allocates memory for buf. Debatable if we need to do this at all.
+                memset(recievedPacket, 0, sizeof(recievedPacket)); //allocates memory for recievedPacket. Debatable if we need to do this at all.
                 ioctl(new_socket, FIONREAD, &checkStatus); //used to check if the socket is working.
                 //if the socket is good,
                 if(checkStatus > 0) {
                         //recv is a funciton that checks if the socket has recieved something from the client.
                         if(n = recv(new_socket, &packetSize, sizeof(packetSize), 0)) {
-                                char buf[packetSize];
-                                n = recv(new_socket, buf, sizeof(buf), 0);
-                                received.append(buf, buf+n);
+                                char recievedPacket[packetSize];
+                                n = recv(new_socket, recievedPacket, sizeof(recievedPacket), 0);
+                                received.append(recievedPacket, recievedPacket+n);
                                 if(received.length() != 0){
                                         numOfPackets++;
                                         //prints to console which packet was recieved.
