@@ -25,7 +25,7 @@ using std::chrono::milliseconds;
 using namespace std::literals::chrono_literals;
 using std::this_thread::sleep_for;
 
-int portNumber;
+//int portNumber;
 int sock;
 string fileName;
 ofstream outFile;
