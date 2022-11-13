@@ -28,16 +28,17 @@ using std::this_thread::sleep_for;
 //int portNumber;
 int sock;
 string fileName;
+//because you can't actually return these, this is nessecary.
 ofstream outFile;
 int server_fd;
 int new_socket;
 int valread;
 int numOfPackets = 0;
 int bufferSize = 0;
-int checkStatus;
-string received;
-char buf[0];
-int n;
+//int checkStatus;
+//string received;
+//char buffer[0];
+//int n;
 
 struct Packet {
         string packetNum;
@@ -47,28 +48,26 @@ struct Packet {
 };
 
 
-
-void UserInputPromptPort()
-
-{
+//prompts user for port number, and returns user input
+int UserInputPromptPort(){
+        int portNumber;
 	cout << "Enter port number: ";
         cin >> portNumber;
+        return portNumber
 	
 }
 
 
 
-void UserInputPromptFile()
+void UserInputPromptFile() {
 
-{
         cout << " What is the name of your file you would like to create (use with the extentsion .txt)?: ";
         cin >> fileName;
-		ofstream outFile(fileName);	
+	ofstream outFile(fileName);	
 }
 
 
-void CreateSocket()
-{
+void CreateSocket(int portNumber){
 		sock = 0;
         struct sockaddr_in address;
         int opt = 1;
@@ -110,35 +109,70 @@ void CreateSocket()
 
 int main(int argc, char const *argv[]) {
         
-        UserInputPromptPort();
+        int portNumber = UserInputPromptPort();
 
         UserInputPromptFile();
         
-        
-		CreateSocket();
-        
+	CreateSocket();
 
-        
+        //start is the starting point of the clock as it is before starting communication
         time_point<Clock> start = Clock::now();
+        //end is the point of the clock as it is every moment. Communication ends once enough
+        //time has passed.
         time_point<Clock> end = Clock::now();
         auto diff = duration_cast<milliseconds>(end-start);
 
+        int n;
+        bool gotHeader = false;
+        //packet recieved by the server
+        char buffer[0]; //we need this as long as we are allocating memory for it with memset in the while loop
+        //recieve header and send ack
+        while(!gotHeader){
+
+                //if we've recieved a packet
+                if(n = recv(new_socket, &bufferSize, sizeof(bufferSize), 0)) {
+                        char buffer[bufferSize];
+                        n = recv(new_socket, buffer, sizeof(buffer), 0);
+                                received.append(buffer, buffer+n);
+                                if(received.length() != 0){
+                                        //ideas on how to read: recv() or use read() with an ifstream
+                                        //honestly, IDK which one of these works, or even how to get our information from them.
+                                }
+
+                }
+
+        }
+
+
+        //while the difference between the start time and the end time is < 10,000 milliseconds
         while(diff.count() < 10000) {
                 diff = duration_cast<milliseconds>(end-start);
                 end = Clock::now();
-                received.clear();
-                checkStatus = 0;
-                memset(buf, 0, sizeof(buf));
-                ioctl(new_socket, FIONREAD, &checkStatus);
+                string received = "";
+                //received.clear(); old
+                int checkStatus = 0;
+                memset(buffer, 0, sizeof(buffer)); //allocates memory for buffer. Debatable if we need to do this at all.
+                ioctl(new_socket, FIONREAD, &checkStatus); //used to check if the socket is working.
+                //if the socket is good,
                 if(checkStatus > 0) {
+                        //recv is a funciton that checks if the socket has recieved something from the client.
                         if(n = recv(new_socket, &bufferSize, sizeof(bufferSize), 0)) {
-                                char buf[bufferSize];
-                                n = recv(new_socket, buf, sizeof(buf), 0);
-                                received.append(buf, buf+n);
+                                char buffer[bufferSize];
+                                n = recv(new_socket, buffer, sizeof(buffer), 0);
+                                received.append(buffer, buffer+n);
+                                
+                                int maxSequenceNumber //Oliver, your algorithm for extracting the sequence number from the header
+
+                                char[] selectiveRepeatBuffer;
+
+                                //writes each packet to the file itself
                                 if(received.length() != 0){
                                         numOfPackets++;
+                                        //prints to console which packet was recieved.
                                         cout << "Packet " << numOfPackets << " received: " << endl;
+                                        //write to the outfile
                                         outFile << received;
+                                        //reset the start time so that the server won't timeout.
                                         start = Clock::now();
                                 }
                         }
