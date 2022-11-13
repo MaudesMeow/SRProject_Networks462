@@ -109,11 +109,9 @@ void CreateSocket(int portNumber){
 
 int main(int argc, char const *argv[]) {
         
-        int portNumber = UserInputPromptPort();
-
-        UserInputPromptFile();
-        
-	CreateSocket();
+                int portNumber = UserInputPromptPort();
+        string fileName = UserInputPromptFile("Enter the name of the file to which you would like to output: ");
+	int sock = CreateSocketServer(portNumber);
 
         //start is the starting point of the clock as it is before starting communication
         time_point<Clock> start = Clock::now();
@@ -121,29 +119,69 @@ int main(int argc, char const *argv[]) {
         //time has passed.
         time_point<Clock> end = Clock::now();
         auto diff = duration_cast<milliseconds>(end-start);
+    
+        //bool gotHeader = false;
+        
+        int headerStatus = 0;
+        int packetSize;
+        int windowSize;
+        int sequenceNumSize;
+        int *headerRecv = {0};
 
-        int n;
-        bool gotHeader = false;
-        //packet recieved by the server
-        char buffer[0]; //we need this as long as we are allocating memory for it with memset in the while loop
-        //recieve header and send ack
-        while(!gotHeader){
+        // creating the pfd struct to use for poll()
+        pollfd pfd;
+        pfd.fd = sock;
+        pfd.events = POLLIN;
 
-                //if we've recieved a packet
-                if(n = recv(new_socket, &bufferSize, sizeof(bufferSize), 0)) {
-                        char buffer[bufferSize];
-                        n = recv(new_socket, buffer, sizeof(buffer), 0);
-                                received.append(buffer, buffer+n);
-                                if(received.length() != 0){
-                                        //ideas on how to read: recv() or use read() with an ifstream
-                                        //honestly, IDK which one of these works, or even how to get our information from them.
-                                }
+        while (headerRecv[0] <=0)
+        {        
 
+                
+
+                // ioctl makes sure there is information to read. Stores bytes to read in checkStatus
+                ioctl(sock, FIONREAD, &headerStatus);
+                        
+                if (headerStatus > 0)
+                {
+                        // client sends information on bufferSize, windowSize, and sequencNumSize
+                        recv(sock, headerRecv, sizeof(headerRecv), 0);
+                        packetSize = headerRecv[0];
+                        windowSize = headerRecv[1];
+                        sequenceNumSize = headerRecv[2];
                 }
-
         }
 
+        // send ack for header here
+        char ack = 1;
+        send(sock, &ack, sizeof(ack), 0);
+        
+        // //recieve header and send ack (****Don't think this is needed anymore****)
+        // while(!gotHeader){}
+               
+        //         //if we've recieved a packet
+        //         if(n = recv(new_socket, &bufferSize, sizeof(bufferSize), 0)) {
+        //                 char buffer[bufferSize];
+        //                 n = recv(new_socket, buffer, sizeof(buffer), 0);
+        //                         received.append(buffer, buffer+n);
+        //                         if(received.length() != 0){
+        //                                 //ideas on how to read: recv() or use read() with an ifstream
+        //                                 //honestly, IDK which one of these works, or even how to get our information from them.
+        //                         }
 
+        //         }
+
+        // }
+
+        string received = "";
+        int n;
+        char *buffer;
+        ofstream outFile;
+        int numOfPackets = 0;
+        int bufferSize = 0;
+        int currentSequenceNumber = 0;        //sequence number used by selective repeat algorithm
+        int windowLowerBound;
+        int windowUpperBound;
+        
         //while the difference between the start time and the end time is < 10,000 milliseconds
         while(diff.count() < 10000) {
                 diff = duration_cast<milliseconds>(end-start);
@@ -160,18 +198,12 @@ int main(int argc, char const *argv[]) {
                                 char buffer[bufferSize];
                                 n = recv(new_socket, buffer, sizeof(buffer), 0);
                                 
-                                //implement window size
-                                //placeholder is 10
-                                char maxSequenceNumber = 10; //Oliver, your algorithm for extracting the sequence number from the header
-
-                                char currentSequenceNumber
-                                char[maxSequenceNumber][packetSize] selectiveRepeatBuffer;
-                                int packetSize = 5; //this is determined from elsewhere. hardcoded for now.
-
+                                
+                                char[sequenceNumSize][packetSize] selectiveRepeatBuffer;
+                                
                                 char[packetSize] packet; //this is the packet that we're going to pull from the buffer.
 
                                 //creates a packet by pulling characters from buffer array up to the packetsize
-                                //TODO: Check to see if this is how you do this part
                                 for(int i = 0; i < packetSize; i++){
 
                                         packet[i] == buffer[i];
@@ -182,20 +214,46 @@ int main(int argc, char const *argv[]) {
                                 //insert checksum algorithm here, and change the above to false;
 
                                 if(passedChecksum){
-                                        
-                                        //copy the packet recieved from the client into the associated location in the
-                                        //selectiveRepeatBuffer
-                                        
 
-                                }
+                                        //get the sequence number of the packet that we've recieved
+                                        char packetSequenceNumber = packet[0];
+                                        int  packetSequenceInt = packetSequenceNumber - 0;
 
+                                        //if we just got a packet out of our window size, just send an ack.
+                                        if(packetSequenceInt > windowUpperBound || packetSequenceInt < windowLowerBound){
 
-                                received.append(buffer, buffer+n);
-                                //writes each packet to the file itself
-                                if(received.length() != 0){
+                                                //send an ack to the client indicating that we have recieved the packet.
+                                                send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
+
+                                        }
+
                                         numOfPackets++;
                                         //prints to console which packet was recieved.
                                         cout << "Packet " << numOfPackets << " received: " << endl;
+
+                                        //send an ack to the client indicating that we have recieved the packet.
+                                        send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
+
+                                        //deep copy the packet onto the selectiveRepeatBuffer
+                                        for(int j = 0; j < packetSize; j++){
+
+                                                selectiveRepeatBuffer[packetSequenceInt][packet[j]];
+
+                                        }
+
+                                        //write packets to our output file
+                                        while(selectiveRepeatBuffer[currentSequenceNumber]){
+                                                //only write the packet part of the packet
+                                                for(int j = 1; j < packetSize-4; j++){
+                                                        received.append(selectiveRepeatBuffer[currentSequenceNumber][j]);
+                                                }
+                                                currentSequenceNumber ++;
+                                        }
+
+                                }
+
+                                //writes all packets
+                                if(received.length() != 0){
                                         //write to the outfile
                                         outFile << received;
                                         //reset the start time so that the server won't timeout.
