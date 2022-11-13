@@ -165,25 +165,32 @@ int main(int argc, char const *argv[]) {
         int checkStatus = 0;
         int header[3] = {packetSize, windowSize, sequenceNumSize};
 
-        //send header here *************
-        send(sock, &header, sizeof(header), 0);
 
-        // ioctl makes sure there is information to read. Stores bytes to read in checkStatus
-        ioctl(sock, FIONREAD, &checkStatus);
-        int *ackHeaderRecv = {0};
-        if (checkStatus > 0)
-        {
+		if (ackHeaderRecv[0] <=0) 
+		{
+			
+			 //send header here *************
+			send(sock, &header, sizeof(header), 0);
+
+			// ioctl makes sure there is information to read. Stores bytes to read in checkStatus
+			ioctl(sock, FIONREAD, &checkStatus);
+			int *ackHeaderRecv = {0};
+			if (checkStatus > 0)
+			{
                 // server sends back 1 for successful reception of header information
                 recv(sock, ackHeaderRecv, sizeof(ackHeaderRecv), 0);
                 
                 /* TODO: 
                         Timeout implementation here at some point
                         have server receive this header and send the ack */
-        }
+			}
+			
+			
+		}
+       
         
         // the server got the header, so we are good to continue sending the file.
-        if (ackHeaderRecv[0] > 0)
-        {
+        
                 //creates a file to print to?
                 FILE *pFile = fopen(fileName.c_str(), "r");
                 //creates an ifstream named "readStream" that reads from the user's selected file
@@ -221,7 +228,7 @@ int main(int argc, char const *argv[]) {
                 cout << "Packets sent. Complete"<< endl;
                 string verify = "md5sum " + fileName;
                 system(verify.c_str());
-        } 
+         
         // server never acked the header, so we don't know that the connection is solid.
         else {
                 cout << "Couldn't verify header info with server, exiting now." << endl;
