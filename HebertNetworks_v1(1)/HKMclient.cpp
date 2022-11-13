@@ -9,7 +9,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include "HSTclient.h"
+#include "HKMclient.h"
+#include "HKMcommon.h"
 
 using namespace std;
 
@@ -46,6 +47,7 @@ string UserInputPromptAddr()
         return ip;	
 }
 
+/*
 //prompts te user for the port number
 int UserInputPromptPort()
 {
@@ -68,6 +70,7 @@ string UserInputPromptFile()
         cin >> file;
         return file;
 }
+*/
 
 //returns packet size from user input
 int UserInputPromptPacket()
@@ -113,7 +116,7 @@ int UserInputPromptSequence()
 
 //creates a socket using a port number and an IP address. 
 //returns the file descriptor for the socket if success, -1 if failure, and prints corresponding error message.
-int CreateSocket(int port, string ip)
+int CreateSocketClient(int port, string ip)
 {
 	int sock = 0, valueRead;
 
@@ -146,7 +149,7 @@ int main(int argc, char const *argv[]) {
         //creates socket, gets file and packet size
         string IPaddress = UserInputPromptAddr();
 	int portNumber = UserInputPromptPort();
-        string fileName = UserInputPromptFile();
+        string fileName = UserInputPromptFile("Enter the name of the input file: ");
         int packetSize = UserInputPromptPacket();
         int windowSize = UserInputPromptWindow();
         int sequenceNumSize = UserInputPromptSequence();
@@ -154,7 +157,7 @@ int main(int argc, char const *argv[]) {
         
         // socket creation failed, exit the program (sockets are represented by integers)
         int sock;
-        if (sock = CreateSocket(portNumber, IPaddress) < 0) {
+        if (sock = CreateSocketClient(portNumber, IPaddress) < 0) {
                 return 0;
         }
 

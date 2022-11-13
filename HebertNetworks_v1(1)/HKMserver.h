@@ -1,6 +1,10 @@
-#define HEADER_DONE false
+#ifndef HKMSERVER_H
+#define HKMSERVER_H
 
 
-int UserInputPromptPort();
-void UserInputPromptFile();
-int CreateSocket(int portNumber);
+// int UserInputPromptPort();
+// void UserInputPromptFile();
+int CreateSocketServer(int port);
+
+
+#endif
