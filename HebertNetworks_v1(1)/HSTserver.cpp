@@ -35,10 +35,10 @@ int server_fd;
 int new_socket;
 int valread;
 int numOfPackets = 0;
-int packetSize = 0;
+int bufferSize = 0;
 //int checkStatus;
 //string received;
-//char recievedPacket[0];
+//char buffer[0];
 //int n;
 
 struct Packet {
@@ -131,7 +131,7 @@ int main(int argc, char const *argv[]) {
         int *headerRecv = {0};
         if (headerStatus > 0)
         {
-                // client sends information on packetSize, windowSize, and sequencNumSize
+                // client sends information on bufferSize, windowSize, and sequencNumSize
                 recv(sock, headerRecv, sizeof(headerRecv), 0);
                 
                 /*TODO: 
@@ -150,10 +150,10 @@ int main(int argc, char const *argv[]) {
         // while(!gotHeader){}
                
         //         //if we've recieved a packet
-        //         if(n = recv(new_socket, &packetSize, sizeof(packetSize), 0)) {
-        //                 char recievedPacket[packetSize];
-        //                 n = recv(new_socket, recievedPacket, sizeof(recievedPacket), 0);
-        //                         received.append(recievedPacket, recievedPacket+n);
+        //         if(n = recv(new_socket, &bufferSize, sizeof(bufferSize), 0)) {
+        //                 char buffer[bufferSize];
+        //                 n = recv(new_socket, buffer, sizeof(buffer), 0);
+        //                         received.append(buffer, buffer+n);
         //                         if(received.length() != 0){
         //                                 //ideas on how to read: recv() or use read() with an ifstream
         //                                 //honestly, IDK which one of these works, or even how to get our information from them.
@@ -165,7 +165,7 @@ int main(int argc, char const *argv[]) {
 
         string received = "";
         int n;
-        char *recievedPacket;
+        char *buffer;
         
 
 
@@ -175,15 +175,15 @@ int main(int argc, char const *argv[]) {
                 end = Clock::now();
                 received.clear();
                 int checkStatus = 0;
-                memset(recievedPacket, 0, sizeof(recievedPacket)); //allocates memory for recievedPacket. Debatable if we need to do this at all.
-                ioctl(new_socket, FIONREAD, &checkStatus); //used to check if the socket is working.
+                memset(buffer, 0, sizeof(buffer)); //allocates memory for buffer. Debatable if we need to do this at all.
+                ioctl(new_socket, FIONREAD, &checkStatus); //used to check if the socket has information to be recieved
                 //if the socket is good,
                 if(checkStatus > 0) {
                         //recv is a funciton that checks if the socket has recieved something from the client.
-                        if(n = recv(new_socket, &packetSize, sizeof(packetSize), 0)) {
-                                char recievedPacket[packetSize];
-                                n = recv(new_socket, recievedPacket, sizeof(recievedPacket), 0);
-                                received.append(recievedPacket, recievedPacket+n);
+                        if(n = recv(new_socket, &bufferSize, sizeof(bufferSize), 0)) {
+                                char buffer[bufferSize];
+                                n = recv(new_socket, buffer, sizeof(buffer), 0);
+                                received.append(buffer, buffer+n);
                                 if(received.length() != 0){
                                         numOfPackets++;
                                         //prints to console which packet was recieved.
