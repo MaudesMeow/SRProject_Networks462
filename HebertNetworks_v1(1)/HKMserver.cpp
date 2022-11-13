@@ -141,12 +141,34 @@ int main(int argc, char const *argv[]) {
         pollfd pfd;
         pfd.fd = sock;
         pfd.events = POLLIN;
+        int rc;
+        int timeout = -1; // still need to implement this, but -1 means it blocks until the event occurs
 
+        // poll() will return 1 if an event occurs, 0 if timedout, and -1 if error
+        rc = poll(&pfd, 1, timeout);
+
+        if (rc < 0)
+        {
+                printf("poll error");
+                exit(1);
+        }
+
+        if (rc == 0)
+        {
+                printf("poll timed out");
+                exit(0);
+        }
+
+        // only get here if poll() found something to read from the socket
+        // client sends information on bufferSize, windowSize, and sequencNumSize
+        recv(sock, headerRecv, sizeof(headerRecv), 0);
+        packetSize = headerRecv[0];
+        windowSize = headerRecv[1];
+        sequenceNumSize = headerRecv[2];
+
+/*  old method for receiving header
         while (headerRecv[0] <=0)
         {        
-
-                
-
                 // ioctl makes sure there is information to read. Stores bytes to read in checkStatus
                 ioctl(sock, FIONREAD, &headerStatus);
                         
@@ -159,6 +181,7 @@ int main(int argc, char const *argv[]) {
                         sequenceNumSize = headerRecv[2];
                 }
         }
+*/
 
         // send ack for header here
         int ack = 1;

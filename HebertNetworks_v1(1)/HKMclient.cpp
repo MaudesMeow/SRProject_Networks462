@@ -9,6 +9,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <poll.h>
 #include "HKMclient.h"
 #include "HKMcommon.h"
 
@@ -166,7 +167,40 @@ int main(int argc, char const *argv[]) {
         int header[3] = {packetSize, windowSize, sequenceNumSize};
         int *ackHeaderRecv = {0};
 
+        pollfd pfd;
+        pfd.fd = sock;
+        pfd.events = POLLIN;
+        int rc;
+        int timeout = -1; // still need to implement this, but -1 means it blocks until the event occurs
+        bool ackRecv = false;
+        int *ackHeaderRecv = {0};
 
+        while (ackHeaderRecv[0] != 1) // while we haven't gotten a successful ack from server
+        {
+        
+                send(sock, &header, sizeof(header), 0);
+
+                rc = poll(&pfd, 1, timeout);
+
+                if (rc < 0)
+                {
+                        printf("poll error");
+                        exit(1);
+                }
+
+                if (rc == 0)
+                {
+                        printf("poll timed out");
+                        exit(0);
+                }
+
+                // only get here if poll() found something to read from the socket
+                // server sends back 1 for successful reception of header information
+                recv(sock, ackHeaderRecv, sizeof(ackHeaderRecv), 0);
+        }
+
+
+/* old method for sending and receiving header/ack
         while (ackHeaderRecv[0] <= 0) 
         {
                 while (ackHeaderRecv[0] == 0) 
@@ -187,9 +221,9 @@ int main(int argc, char const *argv[]) {
                         perror("invalid connection");
                         exit(1);
                         }
-                /* TODO: 
-                        Timeout implementation here at some point
-                        have server receive this header and send the ack */
+                // TODO: 
+                //        Timeout implementation here at some point
+                //        have server receive this header and send the ack 
                 }
 
 
@@ -202,6 +236,7 @@ int main(int argc, char const *argv[]) {
 
         }
         //send header here *************
+*/
         
         // the server got the header, so we are good to continue sending the file.
         
