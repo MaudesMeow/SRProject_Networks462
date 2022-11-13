@@ -160,11 +160,12 @@ int main(int argc, char const *argv[]) {
                                 char buffer[bufferSize];
                                 n = recv(new_socket, buffer, sizeof(buffer), 0);
                                 
+                                //implement window size
                                 //placeholder is 10
                                 char maxSequenceNumber = 10; //Oliver, your algorithm for extracting the sequence number from the header
 
                                 char currentSequenceNumber
-                                char[maxSequenceNumber] selectiveRepeatBuffer;
+                                char[maxSequenceNumber][packetSize] selectiveRepeatBuffer;
                                 int packetSize = 5; //this is determined from elsewhere. hardcoded for now.
 
                                 char[packetSize] packet; //this is the packet that we're going to pull from the buffer.
@@ -180,7 +181,13 @@ int main(int argc, char const *argv[]) {
                                 bool passedChecksum = true; //Oliver, this is your department.
                                 //insert checksum algorithm here, and change the above to false;
 
+                                if(passedChecksum){
+                                        
+                                        //copy the packet recieved from the client into the associated location in the
+                                        //selectiveRepeatBuffer
+                                        
 
+                                }
 
 
                                 received.append(buffer, buffer+n);
