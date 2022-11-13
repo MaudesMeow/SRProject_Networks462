@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string>
+#include <poll.h>
 #include "HKMserver.h"
 #include "HKMcommon.h"
 
@@ -136,8 +137,16 @@ int main(int argc, char const *argv[]) {
         int sequenceNumSize;
         int *headerRecv = {0};
 
+        // creating the pfd struct to use for poll()
+        pollfd pfd;
+        pfd.fd = sock;
+        pfd.events = POLLIN;
+
         while (headerRecv[0] <=0)
         {        
+
+                
+
                 // ioctl makes sure there is information to read. Stores bytes to read in checkStatus
                 ioctl(sock, FIONREAD, &headerStatus);
                         
