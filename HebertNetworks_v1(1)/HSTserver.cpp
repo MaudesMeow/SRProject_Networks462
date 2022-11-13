@@ -159,12 +159,31 @@ int main(int argc, char const *argv[]) {
                         if(n = recv(new_socket, &bufferSize, sizeof(bufferSize), 0)) {
                                 char buffer[bufferSize];
                                 n = recv(new_socket, buffer, sizeof(buffer), 0);
-                                received.append(buffer, buffer+n);
                                 
-                                int maxSequenceNumber //Oliver, your algorithm for extracting the sequence number from the header
+                                //placeholder is 10
+                                char maxSequenceNumber = 10; //Oliver, your algorithm for extracting the sequence number from the header
 
-                                char[] selectiveRepeatBuffer;
+                                char currentSequenceNumber
+                                char[maxSequenceNumber] selectiveRepeatBuffer;
+                                int packetSize = 5; //this is determined from elsewhere. hardcoded for now.
 
+                                char[packetSize] packet; //this is the packet that we're going to pull from the buffer.
+
+                                //creates a packet by pulling characters from buffer array up to the packetsize
+                                //TODO: Check to see if this is how you do this part
+                                for(int i = 0; i < packetSize; i++){
+
+                                        packet[i] == buffer[i];
+
+                                }
+                                
+                                bool passedChecksum = true; //Oliver, this is your department.
+                                //insert checksum algorithm here, and change the above to false;
+
+
+
+
+                                received.append(buffer, buffer+n);
                                 //writes each packet to the file itself
                                 if(received.length() != 0){
                                         numOfPackets++;
