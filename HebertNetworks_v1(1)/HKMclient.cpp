@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include "HKMclient.h"
+#include "HKMcommon.h"
 
 using namespace std;
 
@@ -46,6 +47,7 @@ string UserInputPromptAddr()
         return ip;	
 }
 
+/*
 //prompts te user for the port number
 int UserInputPromptPort()
 {
@@ -68,6 +70,7 @@ string UserInputPromptFile()
         cin >> file;
         return file;
 }
+*/
 
 //returns packet size from user input
 int UserInputPromptPacket()
@@ -113,7 +116,7 @@ int UserInputPromptSequence()
 
 //creates a socket using a port number and an IP address. 
 //returns the file descriptor for the socket if success, -1 if failure, and prints corresponding error message.
-int CreateSocket(int port, string ip)
+int CreateSocketClient(int port, string ip)
 {
 	int sock = 0, valueRead;
 
@@ -146,7 +149,7 @@ int main(int argc, char const *argv[]) {
         //creates socket, gets file and packet size
         string IPaddress = UserInputPromptAddr();
 	int portNumber = UserInputPromptPort();
-        string fileName = UserInputPromptFile();
+        string fileName = UserInputPromptFile("Enter the name of the input file: ");
         int packetSize = UserInputPromptPacket();
         int windowSize = UserInputPromptWindow();
         int sequenceNumSize = UserInputPromptSequence();
@@ -154,38 +157,33 @@ int main(int argc, char const *argv[]) {
         
         // socket creation failed, exit the program (sockets are represented by integers)
         int sock;
-        if (sock = CreateSocket(portNumber, IPaddress) < 0) {
+        if (sock = CreateSocketClient(portNumber, IPaddress) < 0) {
                 return 0;
         }
 
 // send the packet size and window size to the server so they know what to use
         int checkStatus = 0;
         int header[3] = {packetSize, windowSize, sequenceNumSize};
-        int *ackHeaderRecv = {0};
 
-        //once the ackheader is received, the ackHeaderRecv value will be 1. client will no longer send header
-        while (ackHeaderRecv[0] <= 0)
-        {
-                //send header here *************
+        //send header here *************
         send(sock, &header, sizeof(header), 0);
 
         // ioctl makes sure there is information to read. Stores bytes to read in checkStatus
         ioctl(sock, FIONREAD, &checkStatus);
-        
-                if (checkStatus > 0)
-                {
+        int *ackHeaderRecv = {0};
+        if (checkStatus > 0)
+        {
                 // server sends back 1 for successful reception of header information
                 recv(sock, ackHeaderRecv, sizeof(ackHeaderRecv), 0);
                 
                 /* TODO: 
                         Timeout implementation here at some point
                         have server receive this header and send the ack */
-                }
-
-
         }
-              
-        // the server got the header, so we are good to continue sending the file.      
+        
+        // the server got the header, so we are good to continue sending the file.
+        if (ackHeaderRecv[0] > 0)
+        {
                 //creates a file to print to?
                 FILE *pFile = fopen(fileName.c_str(), "r");
                 //creates an ifstream named "readStream" that reads from the user's selected file
@@ -223,12 +221,12 @@ int main(int argc, char const *argv[]) {
                 cout << "Packets sent. Complete"<< endl;
                 string verify = "md5sum " + fileName;
                 system(verify.c_str());
-        
+        } 
         // server never acked the header, so we don't know that the connection is solid.
-        /*else {
+        else {
                 cout << "Couldn't verify header info with server, exiting now." << endl;
                 return 0;
-        }*/
+        }
         
         
 
