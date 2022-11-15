@@ -179,8 +179,8 @@ int main(int argc, char const *argv[]) {
         int numOfPackets = 0;
         int bufferSize = 0;
         int currentSequenceNumber = 0;        //sequence number used by selective repeat algorithm
-        int windowLowerBound;
-        int windowUpperBound;
+        int windowLowerBound = 0;
+        int windowUpperBound = windowSize;
         
         //while the difference between the start time and the end time is < 10,000 milliseconds
         while(diff.count() < 10000) {
@@ -225,30 +225,40 @@ int main(int argc, char const *argv[]) {
                                                 //send an ack to the client indicating that we have recieved the packet.
                                                 send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
 
-                                        }
+                                        }else{
 
-                                        numOfPackets++;
-                                        //prints to console which packet was recieved.
-                                        cout << "Packet " << numOfPackets << " received: " << endl;
+                                                numOfPackets++;
+                                                //prints to console which packet was recieved.
+                                                cout << "Packet " << numOfPackets << " received: " << endl;
 
-                                        //send an ack to the client indicating that we have recieved the packet.
-                                        send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
+                                                //send an ack to the client indicating that we have recieved the packet.
+                                                send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
 
-                                        //deep copy the packet onto the selectiveRepeatBuffer
-                                        for(int j = 0; j < packetSize; j++){
+                                                //deep copy the packet onto the selectiveRepeatBuffer
+                                                for(int j = 0; j < packetSize; j++){
 
-                                                selectiveRepeatBuffer[packetSequenceInt][packet[j]];
+                                                        selectiveRepeatBuffer[packetSequenceInt][packet[j]];
 
-                                        }
-
-                                        //write packets to our output file
-                                        while(selectiveRepeatBuffer[currentSequenceNumber]){
-                                                //only write the packet part of the packet
-                                                for(int j = 1; j < packetSize-4; j++){
-                                                        received.append(selectiveRepeatBuffer[currentSequenceNumber][j]);
                                                 }
-                                                currentSequenceNumber ++;
+
+                                                //write packets to our output file
+                                                while(selectiveRepeatBuffer[currentSequenceNumber]){
+                                                        //only write the packet part of the packet
+                                                        for(int j = 1; j < packetSize-4; j++){
+                                                                received.append(selectiveRepeatBuffer[currentSequenceNumber][j]);
+                                                        }
+                                                        currentSequenceNumber ++;
+                                                        //move the sliding window after effectively writing to the output file
+                                                        windowLowerBound ++;
+                                                        windowUpperBound ++;
+                                                }
+
+
+
+                                                
                                         }
+
+                                        
 
                                 }
 
