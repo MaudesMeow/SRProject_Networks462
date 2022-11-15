@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string>
+#include <poll.h>
 
 #include <sys/ioctl.h>
 #include <vector>
@@ -53,7 +54,7 @@ int UserInputPromptPort(){
         int portNumber;
 	cout << "Enter port number: ";
         cin >> portNumber;
-        return portNumber
+        return portNumber;
 	
 }
 
@@ -67,8 +68,8 @@ void UserInputPromptFile() {
 }
 
 
-void CreateSocket(int portNumber){
-		sock = 0;
+int CreateSocketServer(int portNumber){
+        sock = 0;
         struct sockaddr_in address;
         int opt = 1;
         int addrlen = sizeof(address);
@@ -109,7 +110,7 @@ void CreateSocket(int portNumber){
 
 int main(int argc, char const *argv[]) {
         
-                int portNumber = UserInputPromptPort();
+        int portNumber = UserInputPromptPort();
         string fileName = UserInputPromptFile("Enter the name of the file to which you would like to output: ");
 	int sock = CreateSocketServer(portNumber);
 
@@ -155,22 +156,7 @@ int main(int argc, char const *argv[]) {
         char ack = 1;
         send(sock, &ack, sizeof(ack), 0);
         
-        // //recieve header and send ack (****Don't think this is needed anymore****)
-        // while(!gotHeader){}
-               
-        //         //if we've recieved a packet
-        //         if(n = recv(new_socket, &bufferSize, sizeof(bufferSize), 0)) {
-        //                 char buffer[bufferSize];
-        //                 n = recv(new_socket, buffer, sizeof(buffer), 0);
-        //                         received.append(buffer, buffer+n);
-        //                         if(received.length() != 0){
-        //                                 //ideas on how to read: recv() or use read() with an ifstream
-        //                                 //honestly, IDK which one of these works, or even how to get our information from them.
-        //                         }
-
-        //         }
-
-        // }
+   
 
         string received = "";
         int n;

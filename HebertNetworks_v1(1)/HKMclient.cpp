@@ -9,10 +9,17 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <poll.h>
 #include "HKMclient.h"
 #include "HKMcommon.h"
 
 using namespace std;
+using Clock = std::chrono::steady_clock;
+using std::chrono::time_point;
+using std::chrono::duration_cast;
+using std::chrono::milliseconds;
+using namespace std::literals::chrono_literals;
+using std::this_thread::sleep_for;
 
 //int portNumber;
 //string IPaddress;
@@ -61,7 +68,6 @@ int UserInputPromptPort()
         
         return port;
 }
-
 //returns name of input file.
 string UserInputPromptFile()
 {
@@ -164,30 +170,93 @@ int main(int argc, char const *argv[]) {
 // send the packet size and window size to the server so they know what to use
         int checkStatus = 0;
         int header[3] = {packetSize, windowSize, sequenceNumSize};
+        int *ackHeaderRecv = {0};
+
+        pollfd pfd;
+        pfd.fd = sock;
+        pfd.events = POLLIN;
+        int rc;
+        int timeout = -1; // still need to implement this, but -1 means it blocks until the event occurs
+        bool ackRecv = false;
+        int *ackHeaderRecv = {0};
+        
 
 
-		if (ackHeaderRecv[0] <=0) 
-		{
-			
-			 //send header here *************
-			send(sock, &header, sizeof(header), 0);
+        while (ackHeaderRecv[0] != 1) // while we haven't gotten a successful ack from server
+        {
+                time_point<Clock> startingPoint = Clock::now();
+                //end is the point of the clock as it is every moment. Communication ends once enough
+                //time has passed.
+                time_point<Clock> endPoint = Clock::now();
+                auto duration = duration_cast<milliseconds>(endPoint-startPoint);
 
-			// ioctl makes sure there is information to read. Stores bytes to read in checkStatus
-			ioctl(sock, FIONREAD, &checkStatus);
-			int *ackHeaderRecv = {0};
-			if (checkStatus > 0)
-			{
+                while (duration.count() < 10000) 
+                {
+                        send(sock, &header, sizeof(header), 0);
+
+                        rc = poll(&pfd, 1, timeout);    
+
+                        if (1 <= rc) 
+                        {
+                                break;
+                        }
+
+                }
+
+                timeout = 0; //one last go?
+
+                rc = poll(&pfd, 1, timeout);
+        
+                
+
+                if (rc < 0)
+                {
+                        printf("poll error");
+                        exit(1);
+                }
+
+                if (rc == 0)
+                {
+                        printf("poll timed out");
+                        exit(0);
+                }
+
+                // only get here if poll() found something to read from the socket
                 // server sends back 1 for successful reception of header information
                 recv(sock, ackHeaderRecv, sizeof(ackHeaderRecv), 0);
+        }
+
+
+/* old method for sending header and receiving ack
+        while (ackHeaderRecv[0] <= 0) 
+        {
+                while (ackHeaderRecv[0] == 0) 
+                {
+                send(sock, &header, sizeof(header), 0);
+                // ioctl makes sure there is information to read. Stores bytes to read in checkStatus
+                ioctl(sock, FIONREAD, &checkStatus);
+                int *ackHeaderRecv = {0};
+                if (checkStatus > 0)
+                {
+                // server sends back 1 for successful reception of header information
+                        recv(sock, ackHeaderRecv, sizeof(ackHeaderRecv), 0);
+                        // if ackHeaderRecv returns -1, print an invalid connection & close ( I think this would go here?)
+                        if (ackHeaderRecv[0] == -1) 
+                        {
+                        perror("invalid connection");
+                        exit(1);
+                        }
+                // TODO: 
+                //        Timeout implementation here at some point
+                //        have server receive this header and send the ack 
+                }
+                }
                 
-                /* TODO: 
-                        Timeout implementation here at some point
-                        have server receive this header and send the ack */
-			}
-			
-			
-		}
-       
+                
+        
+        }
+        //send header here *************
+*/
         
         // the server got the header, so we are good to continue sending the file.
         
@@ -228,12 +297,12 @@ int main(int argc, char const *argv[]) {
                 cout << "Packets sent. Complete"<< endl;
                 string verify = "md5sum " + fileName;
                 system(verify.c_str());
-         
+        
         // server never acked the header, so we don't know that the connection is solid.
-        else {
+        /*else {
                 cout << "Couldn't verify header info with server, exiting now." << endl;
                 return 0;
-        }
+        }*/
         
         
 
