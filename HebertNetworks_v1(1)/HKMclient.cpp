@@ -192,6 +192,8 @@ int main(int argc, char const *argv[]) {
 
                 while (duration.count() < 10000) 
                 {
+                        endPoint = Clock::now();
+                        duration = duration_cast<milliseconds>(endPoint-startPoint);
                         send(sock, &header, sizeof(header), 0);
 
                         rc = poll(&pfd, 1, timeout);    
