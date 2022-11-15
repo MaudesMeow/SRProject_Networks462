@@ -200,7 +200,7 @@ int main(int argc, char const *argv[]) {
         }
 
 
-/* old method for sending and receiving header/ack
+/* old method for sending header and receiving ack
         while (ackHeaderRecv[0] <= 0) 
         {
                 while (ackHeaderRecv[0] == 0) 

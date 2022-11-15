@@ -187,22 +187,23 @@ int main(int argc, char const *argv[]) {
         int ack = 1;
         send(sock, &ack, sizeof(ack), 0);
         
-        // //recieve header and send ack (****Don't think this is needed anymore****)
-        // while(!gotHeader){}
+        /* receive header and send ack (****Don't think this is needed anymore****)
+        while(!gotHeader){}
                
-        //         //if we've recieved a packet
-        //         if(n = recv(new_socket, &bufferSize, sizeof(bufferSize), 0)) {
-        //                 char buffer[bufferSize];
-        //                 n = recv(new_socket, buffer, sizeof(buffer), 0);
-        //                         received.append(buffer, buffer+n);
-        //                         if(received.length() != 0){
-        //                                 //ideas on how to read: recv() or use read() with an ifstream
-        //                                 //honestly, IDK which one of these works, or even how to get our information from them.
-        //                         }
+                //if we've recieved a packet
+                if(n = recv(new_socket, &bufferSize, sizeof(bufferSize), 0)) {
+                        char buffer[bufferSize];
+                        n = recv(new_socket, buffer, sizeof(buffer), 0);
+                                received.append(buffer, buffer+n);
+                                if(received.length() != 0){
+                                        //ideas on how to read: recv() or use read() with an ifstream
+                                        //honestly, IDK which one of these works, or even how to get our information from them.
+                                }
 
-        //         }
+                }
 
-        // }
+        }
+        */
 
         string received = "";
         int n;
