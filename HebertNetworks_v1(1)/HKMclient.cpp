@@ -18,8 +18,6 @@ using Clock = std::chrono::steady_clock;
 using std::chrono::time_point;
 using std::chrono::duration_cast;
 using std::chrono::milliseconds;
-using namespace std::literals::chrono_literals;
-using std::this_thread::sleep_for;
 
 //int portNumber;
 //string IPaddress;
@@ -178,22 +176,21 @@ int main(int argc, char const *argv[]) {
         int rc;
         int timeout = -1; // still need to implement this, but -1 means it blocks until the event occurs
         bool ackRecv = false;
-        int *ackHeaderRecv = {0};
+        
         
 
 
         while (ackHeaderRecv[0] != 1) // while we haven't gotten a successful ack from server
         {
                 time_point<Clock> startingPoint = Clock::now();
-                //end is the point of the clock as it is every moment. Communication ends once enough
-                //time has passed.
+                
                 time_point<Clock> endPoint = Clock::now();
-                auto duration = duration_cast<milliseconds>(endPoint-startPoint);
+                auto duration = duration_cast<milliseconds>(endPoint-startingPoint);
 
                 while (duration.count() < 10000) 
                 {
                         endPoint = Clock::now();
-                        duration = duration_cast<milliseconds>(endPoint-startPoint);
+                        duration = duration_cast<milliseconds>(endPoint-startingPoint);
                         send(sock, &header, sizeof(header), 0);
 
                         rc = poll(&pfd, 1, timeout);    
