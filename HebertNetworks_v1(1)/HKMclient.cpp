@@ -165,7 +165,7 @@ int main(int argc, char const *argv[]) {
 // send the packet size and window size to the server so they know what to use
         int checkStatus = 0;
         int header[3] = {packetSize, windowSize, sequenceNumSize};
-        int *ackHeaderRecv = {0};
+        //int *ackHeaderRecv = {0};
 
         pollfd pfd;
         pfd.fd = sock;
