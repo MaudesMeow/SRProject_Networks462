@@ -217,7 +217,7 @@ int main(int argc, char const *argv[]) {
 
         int packetSizeInt = packetSize;
         int sequenceNumSizeInt = (int)sequenceNumSize;
-        
+
         //while the difference between the start time and the end time is < 10,000 milliseconds
         while(diff.count() < 10000) {
                 diff = duration_cast<milliseconds>(end-start);
@@ -225,15 +225,15 @@ int main(int argc, char const *argv[]) {
                 string received = "";
                 //received.clear(); old
                 int checkStatus = 0;
-                int new_socket;
+                
                 memset(buffer, 0, sizeof(buffer)); //allocates memory for buffer. Debatable if we need to do this at all.
-                ioctl(new_socket, FIONREAD, &checkStatus); //used to check if the socket is working.
+                ioctl(sock, FIONREAD, &checkStatus); //used to check if the socket is working.
                 //if the socket is good,
                 if(checkStatus > 0) {
                         //recv is a funciton that checks if the socket has recieved something from the client.
-                        if(n = recv(new_socket, &bufferSize, sizeof(bufferSize), 0)) {
+                        if(n = recv(sock, &bufferSize, sizeof(bufferSize), 0)) {
                                 char buffer[bufferSize];
-                                n = recv(new_socket, buffer, sizeof(buffer), 0);
+                                n = recv(sock, buffer, sizeof(buffer), 0);
                                 
                                 //creates selectiverepeatbuffer
                                 char** selectiveRepeatBuffer;
