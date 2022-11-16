@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 #include <string>
+#include "HKMcommon.h"
 
 #include <sys/ioctl.h>
 #include <vector>
@@ -53,22 +54,24 @@ int UserInputPromptPort(){
         int portNumber;
 	cout << "Enter port number: ";
         cin >> portNumber;
-        return portNumber
+        return portNumber;
 	
 }
 
 
 
-void UserInputPromptFile() {
+void UserInputPromptFile(string prompt) {
 
-        cout << " What is the name of your file you would like to create (use with the extentsion .txt)?: ";
+        //cout << " What is the name of your file you would like to create (use with the extentsion .txt)?: ";
+        cout << prompt;
         cin >> fileName;
 	ofstream outFile(fileName);	
 }
 
 
-void CreateSocket(int portNumber){
-		sock = 0;
+int CreateSocket(int portNumber){
+	sock = 0;
+        return 0; //FIX THIS PLEASE
         struct sockaddr_in address;
         int opt = 1;
         int addrlen = sizeof(address);
@@ -111,7 +114,7 @@ int main(int argc, char const *argv[]) {
         
                 int portNumber = UserInputPromptPort();
         string fileName = UserInputPromptFile("Enter the name of the file to which you would like to output: ");
-	int sock = CreateSocketServer(portNumber);
+	int sock = CreateSocket(portNumber);
 
         //start is the starting point of the clock as it is before starting communication
         time_point<Clock> start = Clock::now();
@@ -123,7 +126,7 @@ int main(int argc, char const *argv[]) {
         //bool gotHeader = false;
         
         int headerStatus = 0;
-        int packetSize;
+        int charPacketSize;
         int windowSize;
         int sequenceNumSize;
         int *headerRecv = {0};
@@ -145,7 +148,7 @@ int main(int argc, char const *argv[]) {
                 {
                         // client sends information on bufferSize, windowSize, and sequencNumSize
                         recv(sock, headerRecv, sizeof(headerRecv), 0);
-                        packetSize = headerRecv[0];
+                        charPacketSize = headerRecv[0];
                         windowSize = headerRecv[1];
                         sequenceNumSize = headerRecv[2];
                 }
@@ -181,6 +184,11 @@ int main(int argc, char const *argv[]) {
         int currentSequenceNumber = 0;        //sequence number used by selective repeat algorithm
         int windowLowerBound = 0;
         int windowUpperBound = windowSize;
+        //many c++ operations don't accept ints as parameters.
+
+
+        int packetSizeInt = (int)charPacketSize;
+        int sequenceNumSizeInt = (int)sequenceNumSize;
         
         //while the difference between the start time and the end time is < 10,000 milliseconds
         while(diff.count() < 10000) {
@@ -198,13 +206,26 @@ int main(int argc, char const *argv[]) {
                                 char buffer[bufferSize];
                                 n = recv(new_socket, buffer, sizeof(buffer), 0);
                                 
+                                //creates selectiverepeatbuffer
+                                char** selectiveRepeatBuffer;
+                                selectiveRepeatBuffer = new char*[sequenceNumSizeInt]();
+
+                                for(int i = 0; i < sequenceNumSizeInt; i++){
+
+                                        selectiveRepeatBuffer[i] = new char[packetSizeInt]();
+
+                                }
+                               
+                                //auto[sequenceNumSizeInt][packetSizeInt] selectiveRepeatBuffer;
+                                //auto[packetSizeInt] packet; 
                                 
-                                char[sequenceNumSize][packetSize] selectiveRepeatBuffer;
-                                
-                                char[packetSize] packet; //this is the packet that we're going to pull from the buffer.
+                                //this is the packet that we're going to pull from the buffer.
+                                char* packet;
+                                packet = new char[packetSizeInt]();
+
 
                                 //creates a packet by pulling characters from buffer array up to the packetsize
-                                for(int i = 0; i < packetSize; i++){
+                                for(int i = 0; i < packetSizeInt; i++){
 
                                         packet[i] == buffer[i];
 
@@ -235,7 +256,7 @@ int main(int argc, char const *argv[]) {
                                                 send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
 
                                                 //deep copy the packet onto the selectiveRepeatBuffer
-                                                for(int j = 0; j < packetSize; j++){
+                                                for(int j = 0; j < packetSizeInt; j++){
 
                                                         selectiveRepeatBuffer[packetSequenceInt][packet[j]];
 
@@ -244,19 +265,21 @@ int main(int argc, char const *argv[]) {
                                                 //write packets to our output file
                                                 while(selectiveRepeatBuffer[currentSequenceNumber]){
                                                         //only write the packet part of the packet
-                                                        for(int j = 1; j < packetSize-4; j++){
-                                                                received.append(selectiveRepeatBuffer[currentSequenceNumber][j]);
+                                                        for(int j = 1; j < packetSizeInt-4; j++){
+                                                                outFile << selectiveRepeatBuffer[currentSequenceNumber][j];
                                                         }
                                                         currentSequenceNumber ++;
                                                         //move the sliding window after effectively writing to the output file
                                                         windowLowerBound ++;
                                                         windowUpperBound ++;
                                                 }
+                                                start = Clock::now();
 
                                         }
 
                                 }
 
+                                /*
                                 //writes all packets
                                 if(received.length() != 0){
                                         //write to the outfile
@@ -264,6 +287,19 @@ int main(int argc, char const *argv[]) {
                                         //reset the start time so that the server won't timeout.
                                         start = Clock::now();
                                 }
+
+                                */
+
+                                 //delete memory I allocated
+                                for(int i = 0; i < sequenceNumSizeInt; i++){
+
+                                        delete[] selectiveRepeatBuffer[i];
+
+                                }
+                                delete[] selectiveRepeatBuffer;
+
+                                delete[] packet;
+
                         }
                 }
         }
