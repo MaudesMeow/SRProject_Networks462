@@ -177,7 +177,7 @@ int main(int argc, char const *argv[]) {
         int rc;
         int timeout = -1; // still need to implement this, but -1 means it blocks until the event occurs
         bool ackRecv = false;
-        int *ackHeaderRecv = {0};
+        int *ackHeaderRecv = new int[1]();
 
         while (ackHeaderRecv[0] != 1) // while we haven't gotten a successful ack from server
         {

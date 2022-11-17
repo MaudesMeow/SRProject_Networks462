@@ -28,6 +28,9 @@ std::string UserInputPromptFile(std::string prompt)
         return file;
 }
 
+// need to declare this for use in the following functions.
+crc crcTable[256];
+
 /* crcTableInit() creates the crc lookup table.
  * Only needs to be run once.
  */

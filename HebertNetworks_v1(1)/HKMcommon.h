@@ -13,7 +13,6 @@
  *  https://barrgroup.com/Embedded-Systems/How-To/CRC-Calculation-C-Code
  */
 typedef unsigned int crc;
-crc crcTable[256];
 
 #define POLYNOMIAL 0x04C11DB7
 #define INITIAL_REMAINDER 0xFFFFFFFF
