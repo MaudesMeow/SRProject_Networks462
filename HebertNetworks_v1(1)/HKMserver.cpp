@@ -135,7 +135,7 @@ int main(int argc, char const *argv[]) {
         int packetSize;
         int windowSize;
         int sequenceNumSize;
-        int *headerRecv = {0};
+        int *headerRecv = new int[3]();
 
         // creating the pfd struct to use for poll()
         pollfd pfd;
