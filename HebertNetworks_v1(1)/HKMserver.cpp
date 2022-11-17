@@ -34,7 +34,7 @@ using std::this_thread::sleep_for;
 //because you can't actually return these, this is nessecary.
 //ofstream outFile;
 //int server_fd;
-//int new_socket;
+//int sock;
 //int valread;
 //int numOfPackets = 0;
 //int bufferSize = 0;
@@ -106,14 +106,14 @@ int CreateSocketServer(int port){
                 return -1;
         }
 
-        int new_socket = -1;
-        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0) 
+        //int sock = -1; This seems stupid.
+        if ((sock = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0) 
 	{
                 perror("accept failed");
                 return -1;
         }
 
-        return new_socket;
+        return sock;
 }
 
 int main(int argc, char const *argv[]) {
@@ -190,9 +190,9 @@ int main(int argc, char const *argv[]) {
         // while(!gotHeader){}
                
         //         //if we've recieved a packet
-        //         if(n = recv(new_socket, &bufferSize, sizeof(bufferSize), 0)) {
+        //         if(n = recv(sock, &bufferSize, sizeof(bufferSize), 0)) {
         //                 char buffer[bufferSize];
-        //                 n = recv(new_socket, buffer, sizeof(buffer), 0);
+        //                 n = recv(sock, buffer, sizeof(buffer), 0);
         //                         received.append(buffer, buffer+n);
         //                         if(received.length() != 0){
         //                                 //ideas on how to read: recv() or use read() with an ifstream
@@ -215,9 +215,8 @@ int main(int argc, char const *argv[]) {
         //many c++ operations don't accept chars as parameters.
 
 
-        int packetSizeInt = (int)charPacketSize;
+        int packetSizeInt = (int)packetSize;
         int sequenceNumSizeInt = (int)sequenceNumSize;
-        
         //while the difference between the start time and the end time is < 10,000 milliseconds
         while(diff.count() < 10000) {
                 diff = duration_cast<milliseconds>(end-start);
@@ -226,13 +225,13 @@ int main(int argc, char const *argv[]) {
                 //received.clear(); old
                 int checkStatus = 0;
                 memset(buffer, 0, sizeof(buffer)); //allocates memory for buffer. Debatable if we need to do this at all.
-                ioctl(new_socket, FIONREAD, &checkStatus); //used to check if the socket is working.
+                ioctl(sock, FIONREAD, &checkStatus); //used to check if the socket is working.
                 //if the socket is good,
                 if(checkStatus > 0) {
                         //recv is a funciton that checks if the socket has recieved something from the client.
-                        if(n = recv(new_socket, &bufferSize, sizeof(bufferSize), 0)) {
+                        if(n = recv(sock, &bufferSize, sizeof(bufferSize), 0)) {
                                 char buffer[bufferSize];
-                                n = recv(new_socket, buffer, sizeof(buffer), 0);
+                                n = recv(sock, buffer, sizeof(buffer), 0);
                                 
                                 //creates selectiverepeatbuffer
                                 char** selectiveRepeatBuffer;
