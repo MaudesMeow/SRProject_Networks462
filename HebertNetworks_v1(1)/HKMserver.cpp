@@ -288,13 +288,19 @@ int main(int argc, char const *argv[]) {
                                         char packetSequenceNumber = packet[0];
                                         int  packetSequenceInt = packetSequenceNumber - 0;
 
-                                        //if we just got a packet out of our window size, just send an ack.
-                                        if(packetSequenceInt > windowUpperBound || packetSequenceInt < windowLowerBound){
+                                        //above windowUpperBound or below windowLowerBound
+                                        if((windowLowerBound < windowUpperBound) && (packetSequenceInt > windowUpperBound || packetSequenceInt < windowLowerBound)){
 
                                                 //send an ack to the client indicating that we have recieved the packet.
                                                 send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
 
-                                        }else{
+                                        }//between windowupperbound and windowLowerBound
+                                        else if(packetSequenceInt > windowUpperBound && packetSequenceInt < windowLowerBound){
+
+                                                //send an ack to the client indicating that we have recieved the packet.
+                                                send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
+                                        }
+                                        else{
 
                                                 numOfPackets++;
                                                 //prints to console which packet was recieved.
@@ -316,10 +322,13 @@ int main(int argc, char const *argv[]) {
                                                         for(int j = 1; j < packetSizeInt-4; j++){
                                                                 outFile << selectiveRepeatBuffer[currentSequenceNumber][j];
                                                         }
-                                                        currentSequenceNumber ++;
+                                                        //remove current packet from selectiveRepeatBuffer
+                                                        selectiveRepeatBuffer[currentSequenceNumber] = 0;
+                                                        //update currentSequenceNumber. Remember, it wraps around.
+                                                        currentSequenceNumber = currentSequenceNumber+1 %sequenceNumSize+1;
                                                         //move the sliding window after effectively writing to the output file
-                                                        windowLowerBound ++;
-                                                        windowUpperBound ++;
+                                                        windowLowerBound = windowLowerBound+1 %sequenceNumSize+1;
+                                                        windowUpperBound = windowUpperBound+1 %sequenceNumSize+1;
                                                 }
                                                 start = Clock::now();
 
