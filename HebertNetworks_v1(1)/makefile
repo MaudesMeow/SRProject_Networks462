@@ -20,6 +20,11 @@ clean:
 	if [ -f bin/HKMserver.out ]; then rm bin/HKMserver.out; fi
 	if [ -f bin/HKMclient.out ]; then rm bin/HKMclient.out; fi
 
+# to create a zip file to send to poseidon
 archive:
 	zip HKMSRP.zip *.cpp *.h makefile
+
+#can copy this for each of us to make transfer easier
+olivertoposeidon: archive
+	scp HKMSRP.zip mahano0661@poseidon1.cs.uwec.edu:/USERS/ALL/mahano0661/CS462
 
