@@ -10,6 +10,8 @@
 #define SEQUENCE_SIZE 64    // Default sequence number size
 #define USE_POLL false      // for testing
 #define TESTING true        // makes prompts easier for us
+#define HEADER_SIZE sizeof(int)*3   // for use in sending and receiving
+
 
 /* CRC generation code is modified from Michael Barr's open source code:
  *  https://barrgroup.com/Embedded-Systems/How-To/CRC-Calculation-C-Code

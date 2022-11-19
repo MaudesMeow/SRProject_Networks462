@@ -119,11 +119,13 @@ int UserInputPromptSequence()
 //returns the file descriptor for the socket if success, -1 if failure, and prints corresponding error message.
 int CreateSocketClient(int port, string ip)
 {
-	int sock = 0, valueRead;
+	int sock = 0, valueRead, client_fd;
 
         struct sockaddr_in serv_addr;
         char buffer[1024] = {0};
-        if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+        
+        sock = socket(AF_INET, SOCK_STREAM, 0);
+        if (sock < 0) 
                 {
                 printf("\n Socket creation error \n");
                 return -1;
@@ -131,17 +133,16 @@ int CreateSocketClient(int port, string ip)
 
         serv_addr.sin_family = AF_INET;
         serv_addr.sin_port = htons(port);
-        serv_addr.sin_port = htons(port);
 
         if(inet_pton(AF_INET, ip.c_str(), &serv_addr.sin_addr)<=0){
                 printf("\n Invalid address \n");
                 return -1;
         }
-        if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        if((client_fd = connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) < 0) {
                 printf("\nConnection Failed \n");
                 return -1;
         }
-		return sock;
+	return sock;
 }
 
 
@@ -198,8 +199,8 @@ int main(int argc, char const *argv[]) {
         
         // socket creation failed, exit the program (sockets are represented by integers)
         int sock;
-        if (sock = CreateSocketClient(portNumber, IPaddress) < 0) {
-                return 0;
+        if ((sock = CreateSocketClient(portNumber, IPaddress)) < 0) {
+                return -1;
         }
 
 // send the packet size and window size to the server so they know what to use
@@ -218,12 +219,12 @@ int main(int argc, char const *argv[]) {
         
         
         bool ackRecv = false;
-        int *ackHeaderRecv = new int[1]();
+        char ackHeaderRecv;// = new int[1]();
 
     //    while (ackHeaderRecv[0] != 1) // while we haven't gotten a successful ack from server
     //    {
         
-                send(sock, &header, sizeof(header), 0);
+                send(sock, header, HEADER_SIZE, 0);
 
                 if (USE_POLL)
                 {
@@ -245,9 +246,8 @@ int main(int argc, char const *argv[]) {
 
                 // only get here if poll() found something to read from the socket
                 // server sends back 1 for successful reception of header information
-                recv(sock, ackHeaderRecv, sizeof(ackHeaderRecv), 0);
+                recv(sock, &ackHeaderRecv, sizeof(ackHeaderRecv), 0);
      //   }
-cout << "ackHeaderRecv: " << ackHeaderRecv << endl;
 
 /* old method for sending header and receiving ack
         while (ackHeaderRecv[0] <= 0) 

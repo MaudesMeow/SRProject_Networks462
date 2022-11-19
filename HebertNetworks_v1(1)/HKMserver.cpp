@@ -73,23 +73,24 @@ void UserInputPromptFile() {
 // creates a listening socket for the client to connect to. 
 // returns the file descriptor for the socket if successfull, -1 if failure
 int CreateSocketServer(int port){
-	int sock = 0;
+	//int sock = 0;
         struct sockaddr_in address;
         int opt = 1;
         int addrlen = sizeof(address);
         int server_fd;
 
-        if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+        server_fd = socket(AF_INET, SOCK_STREAM, 0);
+        if (server_fd < 0) 
 	{
                 perror("socket failed");
                 return -1;	
         }
 
-        if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
-	{
-                perror("setsockopt failed");
-                return -1;
-        }
+        // if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
+	// {
+        //         perror("setsockopt failed");
+        //         return -1;
+        // }
         address.sin_family = AF_INET;
         address.sin_addr.s_addr = INADDR_ANY;
         address.sin_port = htons( port );
@@ -106,8 +107,8 @@ int CreateSocketServer(int port){
                 return -1;
         }
 
-        int new_socket = -1;
-        if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0) 
+        int new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen);
+        if (new_socket<0) 
 	{
                 perror("accept failed");
                 return -1;
@@ -180,7 +181,7 @@ int main(int argc, char const *argv[]) {
 
         // only get here if poll() found something to read from the socket
         // client sends information on bufferSize, windowSize, and sequencNumSize
-        recv(sock, headerRecv, sizeof(headerRecv), 0);
+        recv(sock, headerRecv, HEADER_SIZE, 0);
         packetSize = headerRecv[0];
         windowSize = headerRecv[1];
         sequenceNumSize = headerRecv[2];
@@ -202,7 +203,7 @@ int main(int argc, char const *argv[]) {
         }
 */
         // send ack for header here
-        char ack = 1;
+        char ack = '1';
         send(sock, &ack, sizeof(ack), 0);
         
         // //recieve header and send ack (****Don't think this is needed anymore****)
