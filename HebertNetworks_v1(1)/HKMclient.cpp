@@ -148,13 +148,53 @@ int CreateSocketClient(int port, string ip)
 int main(int argc, char const *argv[]) {
 
         //creates socket, gets file and packet size
-        string IPaddress = UserInputPromptAddr();
-	int portNumber = UserInputPromptPort();
-        string fileName = UserInputPromptFile("Enter the name of the input file: ");
-        int packetSize = UserInputPromptPacket();
-        int windowSize = UserInputPromptWindow();
-        int sequenceNumSize = UserInputPromptSequence();
+        string IPaddress;
+        if (TESTING)
+        {
+                IPaddress = "10.35.195.219";
+        } else {
+                IPaddress = UserInputPromptAddr();
+        }
+        
+        int portNumber;
+        if (TESTING)
+        {
+                portNumber = PORT_NUMBER;
+        } else {
+                portNumber = UserInputPromptPort();
+        }
+        
+        string fileName;
+        if (TESTING)
+        {
+                fileName = "HKMclient.h";
+        } else {
+                fileName = UserInputPromptFile("Enter the name of the input file: ");
+        }
+        
+        int packetSize;
+        if (TESTING)
+        {
+                packetSize = PACKET_SIZE;
+        } else {
+                packetSize = UserInputPromptPacket();
+        }      
 
+        int windowSize;
+        if (TESTING)
+        {
+                windowSize = WINDOW_SIZE;
+        } else {
+                windowSize = UserInputPromptWindow();
+        }
+        
+        int sequenceNumSize;
+        if (TESTING)
+        {
+                sequenceNumSize = SEQUENCE_SIZE;
+        } else {
+                sequenceNumSize = UserInputPromptSequence();
+        }
         
         // socket creation failed, exit the program (sockets are represented by integers)
         int sock;
@@ -169,40 +209,45 @@ int main(int argc, char const *argv[]) {
         header[0] = packetSize;
         header[1] = windowSize;
         header[2] = sequenceNumSize;
-        //int *ackHeaderRecv = {0};
 
         pollfd pfd;
         pfd.fd = sock;
         pfd.events = POLLIN;
         int rc;
         int timeout = -1; // still need to implement this, but -1 means it blocks until the event occurs
+        
+        
         bool ackRecv = false;
         int *ackHeaderRecv = new int[1]();
 
-        while (ackHeaderRecv[0] != 1) // while we haven't gotten a successful ack from server
-        {
+    //    while (ackHeaderRecv[0] != 1) // while we haven't gotten a successful ack from server
+    //    {
         
                 send(sock, &header, sizeof(header), 0);
 
-                rc = poll(&pfd, 1, timeout);
-
-                if (rc < 0)
+                if (USE_POLL)
                 {
-                        printf("poll error");
-                        exit(1);
-                }
+                                        
+                        rc = poll(&pfd, 1, timeout);
 
-                if (rc == 0)
-                {
-                        printf("poll timed out");
-                        exit(0);
+                        if (rc < 0)
+                        {
+                                printf("poll error");
+                                exit(1);
+                        }
+
+                        if (rc == 0)
+                        {
+                                printf("poll timed out");
+                                exit(0);
+                        }
                 }
 
                 // only get here if poll() found something to read from the socket
                 // server sends back 1 for successful reception of header information
                 recv(sock, ackHeaderRecv, sizeof(ackHeaderRecv), 0);
-        }
-
+     //   }
+cout << "ackHeaderRecv: " << ackHeaderRecv << endl;
 
 /* old method for sending header and receiving ack
         while (ackHeaderRecv[0] <= 0) 
@@ -229,15 +274,7 @@ int main(int argc, char const *argv[]) {
                 //        Timeout implementation here at some point
                 //        have server receive this header and send the ack 
                 }
-
-
                 }
-
-                
-                
-        
-
-
         }
         //send header here *************
 */
@@ -245,11 +282,14 @@ int main(int argc, char const *argv[]) {
         // the server got the header, so we are good to continue sending the file.
         
                 //creates a file to print to?
-                FILE *pFile = fopen(fileName.c_str(), "r");
+                //FILE *pFile = fopen(fileName.c_str(), "r");
+                
                 //creates an ifstream named "readStream" that reads from the user's selected file
                 ifstream readStream(fileName);
                 char placeHolder;
-                ostringstream temp;
+                
+                //ostringstream temp;
+                
                 string fileInput;
 
                 //while we haven't hit the end of the file, start sending packets.

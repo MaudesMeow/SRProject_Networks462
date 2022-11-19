@@ -8,6 +8,8 @@
 #define WINDOW_SIZE 16      // Default window size
 #define PACKET_SIZE 1024    // Default packet size
 #define SEQUENCE_SIZE 64    // Default sequence number size
+#define USE_POLL false      // for testing
+#define TESTING true        // makes prompts easier for us
 
 /* CRC generation code is modified from Michael Barr's open source code:
  *  https://barrgroup.com/Embedded-Systems/How-To/CRC-Calculation-C-Code

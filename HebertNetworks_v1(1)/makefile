@@ -20,5 +20,6 @@ clean:
 	if [ -f bin/HKMserver.out ]; then rm bin/HKMserver.out; fi
 	if [ -f bin/HKMclient.out ]; then rm bin/HKMclient.out; fi
 
-
+archive:
+	zip HKMSRP.zip *.cpp *.h makefile
 

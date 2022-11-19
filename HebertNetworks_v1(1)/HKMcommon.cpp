@@ -10,7 +10,7 @@
 int UserInputPromptPort()
 {
         int port;
-        std::cout << "Enter port number or -1 for default (" << PORT_NUMBER << "): ";
+        std::cout << "Enter port number or -1 for default (" << PORT_NUMBER << "): " << std::endl;
         std::cin >> port;
         if (port < 0)
         {
@@ -23,7 +23,7 @@ int UserInputPromptPort()
 std::string UserInputPromptFile(std::string prompt)
 {
         std::string file;
-        std::cout << prompt;
+        std::cout << prompt << std::endl;
         std::cin >> file;
         return file;
 }

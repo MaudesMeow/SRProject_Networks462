@@ -118,8 +118,23 @@ int CreateSocketServer(int port){
 
 int main(int argc, char const *argv[]) {
         
-        int portNumber = UserInputPromptPort();
-        string fileName = UserInputPromptFile("Enter the name of the file to which you would like to output: ");
+        int portNumber;
+        if (TESTING)
+        {
+                portNumber = PORT_NUMBER;
+        } else {
+                portNumber = UserInputPromptPort();
+        }
+        
+        string fileName;
+        if (TESTING)
+        {
+                fileName = "output.txt";
+        } else {
+                fileName = UserInputPromptFile("Enter the name of the file to which you would like to output: ");
+        }
+
+
 	int sock = CreateSocketServer(portNumber);
 
         //start is the starting point of the clock as it is before starting communication
@@ -137,26 +152,30 @@ int main(int argc, char const *argv[]) {
         int sequenceNumSize;
         int *headerRecv = new int[3]();
 
-        // creating the pfd struct to use for poll()
-        pollfd pfd;
-        pfd.fd = sock;
-        pfd.events = POLLIN;
-        int rc;
-        int timeout = -1; // still need to implement this, but -1 means it blocks until the event occurs
 
-        // poll() will return 1 if an event occurs, 0 if timedout, and -1 if error
-        rc = poll(&pfd, 1, timeout);
+        if (USE_POLL)
+        {        
+                // creating the pfd struct to use for poll()
+                pollfd pfd;
+                pfd.fd = sock;
+                pfd.events = POLLIN;
+                int rc;
+                int timeout = -1; // still need to implement this, but -1 means it blocks until the event occurs
 
-        if (rc < 0)
-        {
-                printf("poll error");
-                exit(1);
-        }
+                // poll() will return 1 if an event occurs, 0 if timedout, and -1 if error
+                rc = poll(&pfd, 1, timeout);
 
-        if (rc == 0)
-        {
-                printf("poll timed out");
-                exit(0);
+                if (rc < 0)
+                {
+                        printf("poll error");
+                        exit(1);
+                }
+
+                if (rc == 0)
+                {
+                        printf("poll timed out");
+                        exit(0);
+                }
         }
 
         // only get here if poll() found something to read from the socket
