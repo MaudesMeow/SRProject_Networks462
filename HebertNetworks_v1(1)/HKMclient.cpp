@@ -14,10 +14,6 @@
 #include "HKMcommon.h"
 
 using namespace std;
-using Clock = std::chrono::steady_clock;
-using std::chrono::time_point;
-using std::chrono::duration_cast;
-using std::chrono::milliseconds;
 
 //int portNumber;
 //string IPaddress;
@@ -118,6 +114,52 @@ int UserInputPromptSequence()
         return sequence;
 }
 
+bool* RandomlyGeneratedErrors(int sequenceSize){
+        //allocate memory for new bool array length of sequence
+        bool *errors = new bool[sequenceSize](); 
+        //provides a new ~seed~ to return a different random value
+        srand(time(NULL));
+
+        for(int ii =0; ii < sequenceSize; ii++){
+                //calling a random value between 1-100 and if the value returned is less than 10, an error will be put into that index number
+                if ((rand() % 100 + 1 ) <= 10) {
+                        errors[ii] = true;
+                }
+
+
+
+        }
+        //returns our modified array with errors, from here we can see if the ack or packet being sent is at the same index as an error within the errors array. 
+        return errors; 
+
+}
+
+
+bool* UserInputErros(int sequenceSize) {
+
+        string userInput;
+        
+        string inputIndexValue;;
+        //allocating memory for bool array 
+        bool *errors = new bool[sequenceSize](); 
+        cout << "At what values should an error occur? (type in values seperated with one space)";
+        //using getline method to store user input into string userInput
+        getline(cin, userInput);
+        //string stream in, able to seperate user input by space
+        stringstream ssin(userInput);
+        
+        //while there are still numbers add each to correct place in errors array
+        while (ssin >> inputIndexValue){
+                
+                // stoi == string object integer (I think), converts string to integer value
+                errors[stoi(inputIndexValue)] = true;
+
+
+        }
+
+        return errors;
+
+}
 //creates a socket using a port number and an IP address. 
 //returns the file descriptor for the socket if success, -1 if failure, and prints corresponding error message.
 int CreateSocketClient(int port, string ip)
@@ -167,8 +209,12 @@ int main(int argc, char const *argv[]) {
 
 // send the packet size and window size to the server so they know what to use
         int checkStatus = 0;
-        int header[3] = {packetSize, windowSize, sequenceNumSize};
-        int *ackHeaderRecv = {0};
+        int *header = new int[3]();
+        
+        header[0] = packetSize;
+        header[1] = windowSize;
+        header[2] = sequenceNumSize;
+        //int *ackHeaderRecv = {0};
 
         pollfd pfd;
         pfd.fd = sock;
@@ -176,37 +222,14 @@ int main(int argc, char const *argv[]) {
         int rc;
         int timeout = -1; // still need to implement this, but -1 means it blocks until the event occurs
         bool ackRecv = false;
-        
-        
-
+        int *ackHeaderRecv = new int[1]();
 
         while (ackHeaderRecv[0] != 1) // while we haven't gotten a successful ack from server
         {
-                time_point<Clock> startingPoint = Clock::now();
-                
-                time_point<Clock> endPoint = Clock::now();
-                auto duration = duration_cast<milliseconds>(endPoint-startingPoint);
-
-                while (duration.count() < 10000) 
-                {
-                        endPoint = Clock::now();
-                        duration = duration_cast<milliseconds>(endPoint-startingPoint);
-                        send(sock, &header, sizeof(header), 0);
-
-                        rc = poll(&pfd, 1, timeout);    
-
-                        if (1 <= rc) 
-                        {
-                                break;
-                        }
-
-                }
-
-                timeout = 0; //one last go?
+        
+                send(sock, &header, sizeof(header), 0);
 
                 rc = poll(&pfd, 1, timeout);
-        
-                
 
                 if (rc < 0)
                 {
