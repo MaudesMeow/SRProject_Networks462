@@ -1,5 +1,5 @@
 
-G++_FLAGS=
+G++_FLAGS= -Wall
 
 # can 'make client' to only compile the client, or just 'make' to compile both
 all: server client
@@ -20,11 +20,25 @@ clean:
 	if [ -f bin/HKMserver.out ]; then rm bin/HKMserver.out; fi
 	if [ -f bin/HKMclient.out ]; then rm bin/HKMclient.out; fi
 
-# to create a zip file to send to poseidon
+# create a zip file for our project, removing the old one if it exists
 archive:
+	if [ -f HKMSRP.zip ]; then rm HKMSRP.zip; fi
 	zip HKMSRP.zip *.cpp *.h makefile
 
-#can copy this for each of us to make transfer easier
+# create a zip file, then send it to poseidon server
 olivertoposeidon: archive
 	scp HKMSRP.zip mahano0661@poseidon1.cs.uwec.edu:/USERS/ALL/mahano0661/CS462
+
+jordantoposeidon: archive
+	scp HKMSRP.zip {JORDANS_UWEC_ID}@poseidon0.cs.uwec.edu:/USERS/ALL/{JORDANS_UWEC_ID}/{SOME_OTHER_FOLDER_IF_YOU_WANT}
+
+alextoposeidon: archive
+	scp HKMSRP.zip {ALEXS_UWEC_ID}@poseidon0.cs.uwec.edu:/USERS/ALL/{ALEXS_UWEC_ID}/{SOME_OTHER_FOLDER_IF_YOU_WANT}
+
+# remove the old code and replace it from the zip file, then get rid of the zip file
+unzip:
+	rm *.cpp *.h makefile
+	unzip HKMSRP.zip
+	rm HKMSRP.zip
+
 

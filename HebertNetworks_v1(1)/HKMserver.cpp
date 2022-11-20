@@ -39,7 +39,6 @@ struct Packet {
 // returns the file descriptor for the socket if successfull, -1 if failure
 int CreateSocketServer(int port){
         struct sockaddr_in address;
-        int opt = 1;
         int addrlen = sizeof(address);
         int server_fd;
 
@@ -97,32 +96,26 @@ int main(int argc, char const *argv[]) {
 
 	int sock = CreateSocketServer(portNumber);
 
-        //start is the starting point of the clock as it is before starting communication
-        time_point<Clock> start = Clock::now();
-        //end is the point of the clock as it is every moment. Communication ends once enough
-        //time has passed.
-        time_point<Clock> end = Clock::now();
-        auto diff = duration_cast<milliseconds>(end-start);
+        // //start is the starting point of the clock as it is before starting communication
+        // time_point<Clock> start = Clock::now();
+        // //end is the point of the clock as it is every moment. Communication ends once enough
+        // //time has passed.
+        // time_point<Clock> end = Clock::now();
+        // auto diff = duration_cast<milliseconds>(end-start);
             
-        int headerStatus = 0;
-        int packetSize;
-        int windowSize;
-        int sequenceNumSize;
         int *headerRecv = new int[3]();
 
         // client sends information on bufferSize, windowSize, and sequencNumSize
         recv(sock, headerRecv, HEADER_SIZE, 0);
-        packetSize = headerRecv[0];
-        windowSize = headerRecv[1];
-        sequenceNumSize = headerRecv[2];
+        int packetSize = headerRecv[0];
+        int windowSize = headerRecv[1];
+        int sequenceNumSize = headerRecv[2];
 
         // send ack for header here
         char ack = '1';
         send(sock, &ack, sizeof(ack), 0);
 
-        string received = "";
         int n;
-        char *buffer;
         ofstream outFile;
         int numOfPackets = 0;
         int bufferSize = 0;
@@ -131,30 +124,33 @@ int main(int argc, char const *argv[]) {
         int windowUpperBound = windowSize;
         //many c++ operations don't accept chars as parameters.
 
-
-        int packetSizeInt = packetSize;
+// these are both ints already, is this necessary?
+        int packetSizeInt = packetSize; 
         int sequenceNumSizeInt = sequenceNumSize;
 
-        //while the difference between the start time and the end time is < 10,000 milliseconds
-        while(diff.count() < 10000) {
-                diff = duration_cast<milliseconds>(end-start);
-                end = Clock::now();
+
+        // TODO: We need to put a loop here to keep reading. Not sure this diff one is the best way to go about it?
+
+        // //while the difference between the start time and the end time is < 10,000 milliseconds
+        // while(diff.count() < 10000) {
+                // diff = duration_cast<milliseconds>(end-start);
+                // end = Clock::now();
                 string received = "";
-                //received.clear(); old
-                int checkStatus = 0;
-                
-                memset(buffer, 0, sizeof(buffer)); //allocates memory for buffer. Debatable if we need to do this at all.
-                ioctl(sock, FIONREAD, &checkStatus); //used to check if the socket is working.
-                //if the socket is good,
-                if(checkStatus > 0) {
-                        //recv is a funciton that checks if the socket has recieved something from the client.
-                        if(n = recv(sock, &bufferSize, sizeof(bufferSize), 0)) {
+//                int checkStatus = 0;
+                // 
+
+                // ioctl(sock, FIONREAD, &checkStatus); //used to check if the socket is working.
+                // //if the socket is good,
+                // if(checkStatus > 0) {
+                        // recv is a funciton that reads from the socket and returns the number of bytes it read.
+                        // do we need to send two messages here? Can we assume a set amount is sent each time? (packetSize + BYTES_OF_PADDING)
+                        if((n = recv(sock, &bufferSize, sizeof(bufferSize), 0)) > 0) {
                                 char buffer[bufferSize];
                                 n = recv(sock, buffer, sizeof(buffer), 0);
                                 
                                 //creates selectiverepeatbuffer
                                 char** selectiveRepeatBuffer;
-                                selectiveRepeatBuffer = new char*[sequenceNumSizeInt]();
+                                selectiveRepeatBuffer = new char*[sequenceNumSizeInt + 1](); // want largest index to be sequenceNumSize
 
                                 for(int i = 0; i < sequenceNumSizeInt; i++){
 
@@ -173,18 +169,31 @@ int main(int argc, char const *argv[]) {
                                 //creates a packet by pulling characters from buffer array up to the packetsize
                                 for(int i = 0; i < packetSizeInt; i++){
 
-                                        packet[i] == buffer[i];
+                                        packet[i] = buffer[i];
 
                                 }
                                 
-                                bool passedChecksum = true; //Oliver, this is your department.
-                                //insert checksum algorithm here, and change the above to false;
+                                bool passedChecksum = false;
+                                int pktlen = strlen(packet); // figure out how long our packet is so we can pull the last 4 chars from it. That's where the crc is
+                cout << "pktlen: " << pktlen << endl;
+                                crc crcFromClient = ((packet[pktlen-4] << 24) + (packet[pktlen-3] << 16) + (packet[pktlen-2] << 8) + packet[pktlen-1]);
+                cout << "crcFromClient: " << crcFromClient << endl;
+                                crc crcCalculated = crcFun(packet, pktlen - sizeof(crc)); // don't include the crc at the end of the packet when we are calculating it.
+                cout << "crcCalculated: " << crcCalculated << endl;
+                                if (crcFromClient == crcCalculated)
+                                {
+                                        passedChecksum = true;
+                                }
+                                
 
                                 if(passedChecksum){
 
-                                        //get the sequence number of the packet that we've recieved
-                                        char packetSequenceNumber = packet[0];
-                                        int  packetSequenceInt = packetSequenceNumber - 0;
+                                        //get the sequence number of the packet that we've recieved. 
+                                        //this equation converts the first 4 chars (1 Byte each) into an int (4 Bytes)
+                                        int packetSequenceNumber = ((packet[0] << 24) + (packet[1] << 16) + (packet[2] << 8) + packet[3]);
+                cout << "packetSequenceNumber: " << packetSequenceNumber << endl;
+                                        
+                                        int packetSequenceInt = packetSequenceNumber - 0;
 
                                         //above windowUpperBound or below windowLowerBound
                                         if((windowLowerBound < windowUpperBound) && (packetSequenceInt > windowUpperBound || packetSequenceInt < windowLowerBound)){
@@ -210,14 +219,15 @@ int main(int argc, char const *argv[]) {
                                                 //deep copy the packet onto the selectiveRepeatBuffer
                                                 for(int j = 0; j < packetSizeInt; j++){
 
-                                                        selectiveRepeatBuffer[packetSequenceInt][packet[j]];
+                                                        // skip the sequence number when copying it in, and don't include the crc at the end
+                                                        selectiveRepeatBuffer[packetSequenceInt][j] = packet[j + sizeof(packetSequenceNumber)];
 
                                                 }
 
                                                 //write packets to our output file
                                                 while(selectiveRepeatBuffer[currentSequenceNumber]){
-                                                        //only write the packet part of the packet
-                                                        for(int j = 1; j < packetSizeInt-4; j++){
+                                                        //
+                                                        for(int j = 0; j < packetSizeInt; j++){
                                                                 outFile << selectiveRepeatBuffer[currentSequenceNumber][j];
                                                         }
                                                         //remove current packet from selectiveRepeatBuffer
@@ -228,7 +238,7 @@ int main(int argc, char const *argv[]) {
                                                         windowLowerBound = windowLowerBound+1 %sequenceNumSize+1;
                                                         windowUpperBound = windowUpperBound+1 %sequenceNumSize+1;
                                                 }
-                                                start = Clock::now();
+                                               // start = Clock::now();
 
                                         }
 
@@ -256,8 +266,8 @@ int main(int argc, char const *argv[]) {
                                 delete[] packet;
 
                         }
-                }
-        }
+            //    }
+       // }
         string check = "md5sum " + fileName;
         outFile.close();
         std::system(check.c_str());

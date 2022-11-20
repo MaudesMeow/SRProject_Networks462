@@ -62,7 +62,7 @@ void crcTableInit() {
 /* crcFun() calculates the crc value of a message and returns it. */
 crc crcFun(char *message, int nBytes) {
     crc remainder = INITIAL_REMAINDER; // in case we get a packet which starts with a lot of zeroes
-    char data; // index of the table (dividend)
+    int data; // index of the table (dividend)
     int byte; // which byte we are on currently
 
     // divide the message by the polynomial, one byte at a time.

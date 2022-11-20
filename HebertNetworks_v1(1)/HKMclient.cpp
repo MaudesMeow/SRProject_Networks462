@@ -70,10 +70,8 @@ int UserInputPromptSequence()
 //returns the file descriptor for the socket if success, -1 if failure, and prints corresponding error message.
 int CreateSocketClient(int port, string ip)
 {
-	int sock = 0, valueRead, client_fd;
-
+	int sock = 0, client_fd;
         struct sockaddr_in serv_addr;
-        char buffer[1024] = {0};
         
         sock = socket(AF_INET, SOCK_STREAM, 0);
         if (sock < 0) 
@@ -155,14 +153,13 @@ int main(int argc, char const *argv[]) {
         }
 
 // send the packet size and window size to the server so they know what to use
-        int checkStatus = 0;
+     //   int checkStatus = 0;
         int *header = new int[3]();
         
         header[0] = packetSize;
         header[1] = windowSize;
         header[2] = sequenceNumSize;
         
-        bool ackRecv = false;
         char ackHeaderRecv;// = new int[1]();
 
         send(sock, header, HEADER_SIZE, 0);
@@ -218,8 +215,9 @@ int main(int argc, char const *argv[]) {
 
                 //if payload is bigger than just the sequence number and crc, we have a packet to send.
                 //send the packet and its size to the server, and tell the user we did it.
-                if(!nextPacket.payload.size() > BYTES_OF_PADDING){
+                if(!(nextPacket.payload.size() > BYTES_OF_PADDING)){
                         int bufsize = nextPacket.payload.size();
+                        // do we need to send twice? Can we just assume that we send a set amount each time? (packetSize + BYTES_OF_PADDING)
                         send(sock, &bufsize, sizeof(bufsize), 0);
                         send(sock, nextPacket.payload.data(), nextPacket.payload.size(), 0);
                 }
