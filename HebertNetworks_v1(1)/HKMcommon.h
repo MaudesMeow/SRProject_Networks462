@@ -11,6 +11,7 @@
 #define USE_POLL false      // for testing
 #define TESTING true        // makes prompts easier for us
 #define HEADER_SIZE sizeof(int)*3   // for use in sending and receiving
+#define BYTES_OF_PADDING 8  // 4 for the sequence number and 4 for the crc (both ints)
 
 
 /* CRC generation code is modified from Michael Barr's open source code:
@@ -20,14 +21,13 @@ typedef unsigned int crc;
 
 #define POLYNOMIAL 0x04C11DB7
 #define INITIAL_REMAINDER 0xFFFFFFFF
-//#define FINAL_XOR_VALUE 0xFFFFFFFF // might need this if CHECK_VALUE doesn't match
 #define CHECK_VALUE 0xCBF43926
 #define CRCBYTES sizeof(crc)
 #define CRCWIDTH (8 * sizeof(crc))
 #define CRCTOPBIT (1 << (CRCWIDTH - 1))
 
 void crcTableInit();
-crc crcFun(unsigned char const message[], int nBytes);
+crc crcFun(char *message, int nBytes);
 
 int UserInputPromptPort();
 std::string UserInputPromptFile(std::string prompt);

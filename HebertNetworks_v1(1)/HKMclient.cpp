@@ -15,13 +15,6 @@
 
 using namespace std;
 
-typedef struct Packet{
-        public:
-                uint32_t packetID;
-                uint32_t packetSeqNum;
-                string inside;
-}pktype;
-
 //prompts the user for the IP address we're going to use to send packets.
 string UserInputPromptAddr()
 {
@@ -185,29 +178,50 @@ int main(int argc, char const *argv[]) {
         //creates an ifstream named "readStream" that reads from the user's selected file
         ifstream readStream(fileName);
         char placeHolder;        
-        string fileInput;
+        string fileInput =""; // this is what we send to the server
+        int currentSequenceNum = 0; // the sequence number of the packet we are reading from the file. Always needs to be in the window
+
+        // defining our packet struct to keep track of the timeouts for each one we send
+        typedef struct Packet{
+        public:
+                int sequenceNum; // for reference, might not be needed
+                uint64_t timeLastSent; // used in timeout for each packet we send
+                string payload = ""; // this is what gets sent to server
+                }packet;
+
+        // our selective repeat buffer to store the packtes in until they are acked
+        packet srpBuffer[sequenceNumSize + 1];
+
+        int leftWindowEdge, rightWindowEdge; // these define our window on the client
 
         //while we haven't hit the end of the file, start sending packets.
         while(!readStream.eof()){
+                
+                // create the next packet and add it to the sr buffer at the correct index
+                packet nextPacket;
+                srpBuffer[currentSequenceNum] = nextPacket;
 
-                fileInput.clear();
-                //payOut.clear();
+                // start with the sequence number we are on
+                nextPacket.sequenceNum = currentSequenceNum; // to use as reference later (if needed)
+                nextPacket.payload = to_string(currentSequenceNum); // putting the sequence number at the front of the packet
 
-                //pull characters from readStream until fileInput == one packet.
+                //pull characters from readStream until payload == one packet.
                 for (int i = 0; i < packetSize && readStream.get(placeHolder); i++){
-                        fileInput.push_back(placeHolder);
+                        nextPacket.payload.push_back(placeHolder);
                 }
 
-                int nextSequenceNum = 0;
-                //if fileInput isn't empty, we have a packet to send.
+                //calculate the crc and add it to the end of the file
+                crc newcrc = crcFun(nextPacket.payload.data(), nextPacket.payload.size());
+                nextPacket.payload += to_string(newcrc);
+
+
+
+                //if payload is bigger than just the sequence number and crc, we have a packet to send.
                 //send the packet and its size to the server, and tell the user we did it.
-                if(!fileInput.empty()){
-                        //payOut.append(fileInput);
-                        nextSequenceNum++;
-                        int bufsize = fileInput.length();
+                if(!nextPacket.payload.size() > BYTES_OF_PADDING){
+                        int bufsize = nextPacket.payload.size();
                         send(sock, &bufsize, sizeof(bufsize), 0);
-                        send(sock, fileInput.data(), fileInput.size(), 0);
-                        cout << "Packet " << nextSequenceNum << " sent: " << endl;
+                        send(sock, nextPacket.payload.data(), nextPacket.payload.size(), 0);
                 }
 
         }

@@ -60,10 +60,10 @@ void crcTableInit() {
 
 
 /* crcFun() calculates the crc value of a message and returns it. */
-crc crcFun(unsigned char const message[], int nBytes) {
+crc crcFun(char *message, int nBytes) {
     crc remainder = INITIAL_REMAINDER; // in case we get a packet which starts with a lot of zeroes
-    unsigned char data;
-    int byte;
+    char data; // index of the table (dividend)
+    int byte; // which byte we are on currently
 
     // divide the message by the polynomial, one byte at a time.
     for (byte = 0; byte < nBytes; ++byte) {
