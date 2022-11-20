@@ -135,7 +135,11 @@ bool* RandomlyGeneratedErrors(int sequenceSize){
 }
 
 
-bool* UserInputErros(int sequenceSize) {
+bool* UserInputErrors(int sequenceSize) {
+
+
+
+
 
         string userInput;
         
@@ -160,7 +164,56 @@ bool* UserInputErros(int sequenceSize) {
         return errors;
 
 }
+
+
+bool UserPromptErrorChoice(int* sequenceSize, bool** errorArray){
+
+        
+        string userInput = "";
+
+        cout << "How would you like to generate errors?" << endl;
+        cout << "Default: none (hit enter). " << endl;
+        cout << "Randomly generated (press 1)." << endl;
+        cout << "User generated (press 2)." << endl;
+
+        
+        getline(cin, userInput);
+        
+        if (userInput.empty()) {
+                userInput = -1; 
+        }
+
+        if (!userInput.empty()) {
+                while (*errorArray == NULL) {
+                        if (userInput.compare("-1") == 0){
+                                *errorArray = (bool*)malloc(sizeof(bool) * (*sequenceSize)); 
+                                for(int i = 0; i < *sequenceSize; i++){
+                                        (*errorArray)[i] = false;
+                                }
+                        } else if(userInput.compare("1") == 0){
+                                *errorArray = RandomlyGeneratedErrors(*sequenceSize);
+                        } else if(userInput.compare("2") == 0){
+                                *errorArray = UserInputErrors(*sequenceSize);
+                        } else{
+                                cout << "Invalid input. Try again." << endl;
+                                getline(cin, userInput);
+                                }
+
+
+                        }
+
+                }
+                return errorArray;
+
+
+}
+
+
+
+
+
 //creates a socket using a port number and an IP address. 
+
 //returns the file descriptor for the socket if success, -1 if failure, and prints corresponding error message.
 int CreateSocketClient(int port, string ip)
 {
@@ -191,6 +244,9 @@ int CreateSocketClient(int port, string ip)
 
 
 int main(int argc, char const *argv[]) {
+
+        bool* errorArray = NULL;
+        UserPromptErrorChoice(5, errorArray);
 
         //creates socket, gets file and packet size
         string IPaddress = UserInputPromptAddr();
