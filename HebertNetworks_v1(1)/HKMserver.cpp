@@ -30,6 +30,7 @@ using std::this_thread::sleep_for;
 typedef struct Packet {
         bool isFull;
         char *message;
+        int lengthOfPacket;
 }packet;
 
 
@@ -147,7 +148,7 @@ int main(int argc, char const *argv[]) {
                         if(n > 0) {
                                 char buffer[bufferSize];
                                 int pktlen = recv(sock, buffer, sizeof(buffer), 0);
-                        cout << "pktlen: " << pktlen << endl;
+                        cout << "\n\npktlen: " << pktlen << endl;
                                 //creates selectiverepeatbuffer
                                 packet *selectiveRepeatBuffer;
                                 selectiveRepeatBuffer = new packet[sequenceNumSize + 1](); // want largest index to be sequenceNumSize
@@ -159,6 +160,7 @@ int main(int argc, char const *argv[]) {
                                 packet newPacket;
                                 newPacket.message = new char[pktlen]();
                                 newPacket.isFull = true;
+                                newPacket.lengthOfPacket = pktlen;
 
 
                                 //creates a packet by pulling characters from buffer array up to the packetsize
@@ -194,16 +196,16 @@ int main(int argc, char const *argv[]) {
                                                                     ((((unsigned int) newPacket.message[2]) << 8)  & 0x0000FF00) |
                                                                      (((unsigned int) newPacket.message[3])        & 0x000000FF));
                 cout << "packetSequenceNumber: " << packetSequenceNumber << endl;
-                                        
+                cout << "lower bound: " << windowLowerBound << endl;         
                                         //above windowUpperBound or below windowLowerBound
                                         if((windowLowerBound < windowUpperBound) && (packetSequenceNumber > windowUpperBound || packetSequenceNumber < windowLowerBound)){
-
+cout << "outside of normal window" << endl;
                                                 //send an ack to the client indicating that we have recieved the packet.
                                                 send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
 
                                         }//between windowupperbound and windowLowerBound
                                         else if(packetSequenceNumber > windowUpperBound && packetSequenceNumber < windowLowerBound){
-
+cout << "outside of inverted window" << endl;
                                                 //send an ack to the client indicating that we have recieved the packet.
                                                 send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
                                         }
@@ -229,18 +231,17 @@ int main(int argc, char const *argv[]) {
                                                 // }
 
                                                 //write packets to our output file
-        cout << "isFull: " << selectiveRepeatBuffer[windowLowerBound].isFull << endl;
                                                 while(selectiveRepeatBuffer[windowLowerBound].isFull){
                                                         //
 
-                                                        for(int j = 0; j < packetSize; j++){
-                                                                outFile << selectiveRepeatBuffer[windowLowerBound].message[j];
+                                                        for(int j = sizeof(packetSequenceNumber); j < (selectiveRepeatBuffer[windowLowerBound].lengthOfPacket - (int) sizeof(crc)); j++){
+                                                                outFile << selectiveRepeatBuffer[windowLowerBound].message[j] << flush;
                                                         }
                                                         //remove current packet from selectiveRepeatBuffer
                                                         selectiveRepeatBuffer[windowLowerBound].isFull = false;
                                                         //move the sliding window after effectively writing to the output file
-                                                        windowLowerBound = windowLowerBound+1 %sequenceNumSize+1;
-                                                        windowUpperBound = windowUpperBound+1 %sequenceNumSize+1;
+                                                        windowLowerBound = (windowLowerBound+1) % (sequenceNumSize+1);
+                                                        windowUpperBound = (windowUpperBound+1) % (sequenceNumSize+1);
                                                 }
                                                // start = Clock::now();
 

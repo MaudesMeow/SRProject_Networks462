@@ -238,6 +238,11 @@ int main(int argc, char const *argv[]) {
                         send(sock, nextPacket.payload, bufsize, 0);
                 }
 
+// receiving our ack here.
+// TODO: implement this shiz.
+                int ackReceived;
+                recv(sock, &ackReceived, sizeof(ackReceived), 0);
+
                 // update the sequence number
                 currentSequenceNum = (currentSequenceNum + 1) % (sequenceNumSize + 1);
 
