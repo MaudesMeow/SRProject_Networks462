@@ -179,7 +179,7 @@ int main(int argc, char const *argv[]) {
         ifstream readStream(fileName);
         char placeHolder;        
         string fileInput =""; // this is what we send to the server
-        int currentSequenceNum = 0; // the sequence number of the packet we are reading from the file. Always needs to be in the window
+        int currentSequenceNum = 0; // the sequence number of the packet we are reading from the file. Always needs to be in the window. Might be the same as window upper bound?
 
         // defining our packet struct to keep track of the timeouts for each one we send
         typedef struct Packet{
@@ -192,7 +192,7 @@ int main(int argc, char const *argv[]) {
         // our selective repeat buffer to store the packtes in until they are acked
         packet srpBuffer[sequenceNumSize + 1];
 
-        int leftWindowEdge, rightWindowEdge; // these define our window on the client
+        int windowUpperBound, windowLowerBound; // these define our window on the client
 
         //while we haven't hit the end of the file, start sending packets.
         while(!readStream.eof()){
