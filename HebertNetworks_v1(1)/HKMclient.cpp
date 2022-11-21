@@ -104,7 +104,7 @@ int main(int argc, char const *argv[]) {
         string IPaddress;
         if (TESTING)
         {
-                IPaddress = "10.35.195.219";
+                IPaddress = "10.35.195.219"; // IP for Poseidon0
         } else {
                 IPaddress = UserInputPromptAddr();
         }
@@ -125,7 +125,7 @@ int main(int argc, char const *argv[]) {
                 fileName = UserInputPromptFile("Enter the name of the input file: ");
         }
         
-        int packetSize;
+        int packetSize; // the max packet size
         if (TESTING)
         {
                 packetSize = PACKET_SIZE;
@@ -141,7 +141,7 @@ int main(int argc, char const *argv[]) {
                 windowSize = UserInputPromptWindow();
         }
         
-        int sequenceNumSize;
+        int sequenceNumSize; // the max sequence number value
         if (TESTING)
         {
                 sequenceNumSize = SEQUENCE_SIZE;
@@ -155,16 +155,16 @@ int main(int argc, char const *argv[]) {
                 return -1;
         }
 
-// send the packet size and window size to the server so they know what to use
-     //   int checkStatus = 0;
+// send the packet size, window size and sequence number size to the server so they know what to use
         int *header = new int[3]();
         
         header[0] = packetSize;
         header[1] = windowSize;
         header[2] = sequenceNumSize;
         
-        char ackHeaderRecv;// = new int[1]();
+        char ackHeaderRecv; // the value we 'catch' the ack in for the header
 
+        // send the header
         send(sock, header, HEADER_SIZE, 0);
 
         // server sends back 1 for successful reception of header information        
@@ -184,7 +184,7 @@ int main(int argc, char const *argv[]) {
         // defining our packet struct to keep track of the timeouts for each one we send
         typedef struct Packet{
         public:
-                int sequenceNum; // for reference, might not be needed
+                int sequenceNum; // for reference, might not be needed. should be equal to the index of the srpBuffer array
                 uint64_t timeLastSent; // used in timeout for each packet we send
                 char *payload; // this is what gets sent to server
                 }packet;
@@ -206,12 +206,13 @@ int main(int argc, char const *argv[]) {
                 nextPacket.payload = new char[packetSize + BYTES_OF_PADDING]();
 
                 // putting the sequence number at the front of the packet
-                nextPacket.payload[0] = (char) (currentSequenceNum & 0xFF000000) >> 24; 
-                nextPacket.payload[1] = (char) (currentSequenceNum & 0x00FF0000) >> 16;
-                nextPacket.payload[2] = (char) (currentSequenceNum & 0x0000FF00) >> 8;
-                nextPacket.payload[3] = (char) (currentSequenceNum & 0x000000FF);
+                nextPacket.payload[0] = (char) ((currentSequenceNum & 0xFF000000) >> 24); 
+                nextPacket.payload[1] = (char) ((currentSequenceNum & 0x00FF0000) >> 16);
+                nextPacket.payload[2] = (char) ((currentSequenceNum & 0x0000FF00) >> 8);
+                nextPacket.payload[3] = (char)  (currentSequenceNum & 0x000000FF);
 
-                int payloadSize = 0;
+                int payloadSize = 0; // actual number of bytes read in from file
+
                 //pull characters from readStream until payload == one packet.
                 for (int i = 0; (i < packetSize) && readStream.get(placeHolder); i++){
                         nextPacket.payload[i+sizeof(currentSequenceNum)] = placeHolder;
@@ -220,24 +221,25 @@ int main(int argc, char const *argv[]) {
 
 
                 //calculate the crc and add it to the end of the file
-                crc newcrc = crcFun(&nextPacket.payload[0], payloadSize);
+                crc newcrc = crcFun(&nextPacket.payload[0], payloadSize + sizeof(currentSequenceNum));
         cout << "crc: " << newcrc << endl;
-                nextPacket.payload[payloadSize + sizeof(currentSequenceNum)]     = (char) (newcrc & 0xFF000000) >> 24;
-                nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 1] = (char) (newcrc & 0x00FF0000) >> 16;
-                nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 2] = (char) (newcrc & 0x0000FF00) >> 8;
-                nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 3] = (char) (newcrc & 0x000000FF);
-        cout << "crc from payload: " << nextPacket.payload[payloadSize + sizeof(currentSequenceNum)] << nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 1] << nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 2] << nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 3] << endl;
-
-                int bufsize = (payloadSize + BYTES_OF_PADDING);
+                nextPacket.payload[payloadSize + sizeof(currentSequenceNum)]     = (char) ((newcrc & 0xFF000000) >> 24);
+                nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 1] = (char) ((newcrc & 0x00FF0000) >> 16);
+                nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 2] = (char) ((newcrc & 0x0000FF00) >> 8);
+                nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 3] = (char)  (newcrc & 0x000000FF);
+                
+                int bufsize = (payloadSize + BYTES_OF_PADDING); // size of packet to send
 
                 //if payload is bigger than just the sequence number and crc, we have a packet to send.
                 //send the packet and its size to the server, and tell the user we did it.
                 if(bufsize > BYTES_OF_PADDING){
         cout << "bytes sent: " << bufsize << endl;
-                        // do we need to send twice? Can we just assume that we send a set amount each time? (packetSize + BYTES_OF_PADDING)
                         send(sock, &bufsize, sizeof(bufsize), 0);
                         send(sock, nextPacket.payload, bufsize, 0);
                 }
+
+                // update the sequence number
+                currentSequenceNum = (currentSequenceNum + 1) % (sequenceNumSize + 1);
 
         }
 

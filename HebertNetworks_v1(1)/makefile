@@ -37,7 +37,7 @@ alextoposeidon: archive
 
 # remove the old code and replace it from the zip file, then get rid of the zip file
 unzip:
-	if [ -f HKMSRP.zip ]; then actuallyunzip; fi
+	if [ -f HKMSRP.zip ]; then make actuallyunzip; fi
 
 actuallyunzip:
 	rm *.cpp *.h makefile 10kbtestfile.in

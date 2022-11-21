@@ -27,12 +27,10 @@ using std::chrono::duration_cast;
 using std::chrono::milliseconds;
 using std::this_thread::sleep_for;
 
-struct Packet {
-        string packetNum;
-        string sequenceNum;
-        string checksum;
-        string message;
-};
+typedef struct Packet {
+        bool isFull;
+        char *message;
+}packet;
 
 
 // creates a listening socket for the client to connect to. 
@@ -123,14 +121,8 @@ int main(int argc, char const *argv[]) {
         outFile.open(fileName, ios::out | ios::app);
         int numOfPackets = 0;
         int bufferSize = 0;
-        int currentSequenceNumber = 0;        //sequence number used by selective repeat algorithm
-        int windowLowerBound = 0;
+        int windowLowerBound = 0;        //sequence number used by selective repeat algorithm (basically the left side of our window)
         int windowUpperBound = windowSize;
-        //many c++ operations don't accept chars as parameters.
-
-// these are both ints already, is this necessary?
-        int packetSizeInt = packetSize; 
-        int sequenceNumSizeInt = sequenceNumSize;
 
         int checkStatus;
 
@@ -157,39 +149,34 @@ int main(int argc, char const *argv[]) {
                                 int pktlen = recv(sock, buffer, sizeof(buffer), 0);
                         cout << "pktlen: " << pktlen << endl;
                                 //creates selectiverepeatbuffer
-                                char** selectiveRepeatBuffer;
-                                selectiveRepeatBuffer = new char*[sequenceNumSizeInt + 1](); // want largest index to be sequenceNumSize
-
-                                for(int i = 0; i < sequenceNumSizeInt; i++){
-
-                                        selectiveRepeatBuffer[i] = new char[packetSizeInt]();
-
-                                }
-                               
-                                //auto[sequenceNumSizeInt][packetSizeInt] selectiveRepeatBuffer;
-                                //auto[packetSizeInt] packet; 
+                                packet *selectiveRepeatBuffer;
+                                selectiveRepeatBuffer = new packet[sequenceNumSize + 1](); // want largest index to be sequenceNumSize
+                        
+                                //auto[sequenceNumSize][packetSize] selectiveRepeatBuffer;
+                                //auto[packetSize] packet; 
                                 
                                 //this is the packet that we're going to pull from the buffer.
-                                char* packet;
-                                packet = new char[pktlen]();
+                                packet newPacket;
+                                newPacket.message = new char[pktlen]();
+                                newPacket.isFull = true;
 
 
                                 //creates a packet by pulling characters from buffer array up to the packetsize
                                 for(int i = 0; i < pktlen; i++){
 
-                                        packet[i] = buffer[i];
+                                        newPacket.message[i] = buffer[i];
 
                                 }
                                 
                                 bool passedChecksum = false;
                                                                 
-                                crc crcFromClient = (((((unsigned int) packet[pktlen-4]) << 24) & 0xFF000000) | 
-                                                     ((((unsigned int) packet[pktlen-3]) << 16) & 0x00FF0000) |
-                                                     ((((unsigned int) packet[pktlen-2]) << 8)  & 0x0000FF00) |
-                                                      (((unsigned int) packet[pktlen-1])        & 0x000000FF));
+                                crc crcFromClient = (((((unsigned int) newPacket.message[pktlen-4]) << 24) & 0xFF000000) | 
+                                                     ((((unsigned int) newPacket.message[pktlen-3]) << 16) & 0x00FF0000) |
+                                                     ((((unsigned int) newPacket.message[pktlen-2]) << 8)  & 0x0000FF00) |
+                                                      (((unsigned int) newPacket.message[pktlen-1])        & 0x000000FF));
                 cout << "crcFromClient: " << crcFromClient << endl;
                                 
-                                crc crcCalculated = crcFun(&packet[0], pktlen - sizeof(crc)); // don't include the crc at the end of the packet when we are calculating it.
+                                crc crcCalculated = crcFun(&newPacket.message[0], pktlen - sizeof(crc)); // don't include the crc at the end of the packet when we are calculating it.
                 cout << "crcCalculated: " << crcCalculated << endl;
                                 
                                 if (crcFromClient == crcCalculated)
@@ -202,19 +189,20 @@ int main(int argc, char const *argv[]) {
 
                                         //get the sequence number of the packet that we've recieved. 
                                         //this equation converts the first 4 chars (1 Byte each) into an int (4 Bytes)
-                                        int packetSequenceNumber = ((packet[0] << 24) + (packet[1] << 16) + (packet[2] << 8) + packet[3]);
+                                        int packetSequenceNumber = (((((unsigned int) newPacket.message[0]) << 24) & 0xFF000000) | 
+                                                                    ((((unsigned int) newPacket.message[1]) << 16) & 0x00FF0000) |
+                                                                    ((((unsigned int) newPacket.message[2]) << 8)  & 0x0000FF00) |
+                                                                     (((unsigned int) newPacket.message[3])        & 0x000000FF));
                 cout << "packetSequenceNumber: " << packetSequenceNumber << endl;
                                         
-                                        int packetSequenceInt = packetSequenceNumber - 0;
-
                                         //above windowUpperBound or below windowLowerBound
-                                        if((windowLowerBound < windowUpperBound) && (packetSequenceInt > windowUpperBound || packetSequenceInt < windowLowerBound)){
+                                        if((windowLowerBound < windowUpperBound) && (packetSequenceNumber > windowUpperBound || packetSequenceNumber < windowLowerBound)){
 
                                                 //send an ack to the client indicating that we have recieved the packet.
                                                 send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
 
                                         }//between windowupperbound and windowLowerBound
-                                        else if(packetSequenceInt > windowUpperBound && packetSequenceInt < windowLowerBound){
+                                        else if(packetSequenceNumber > windowUpperBound && packetSequenceNumber < windowLowerBound){
 
                                                 //send an ack to the client indicating that we have recieved the packet.
                                                 send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
@@ -228,24 +216,28 @@ int main(int argc, char const *argv[]) {
                                                 //send an ack to the client indicating that we have recieved the packet.
                                                 send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
 
-                                                //deep copy the packet onto the selectiveRepeatBuffer
-                                                for(int j = 0; j < packetSizeInt; j++){
+        cout << "after sending ack" << endl;
+                                                selectiveRepeatBuffer[packetSequenceNumber] = newPacket;
+        cout << "after putting the new packet in the array" << endl;                                    
+                                            
+                                                // //deep copy the packet onto the selectiveRepeatBuffer
+                                                // for(int j = 0; j < packetSize; j++){
 
-                                                        // skip the sequence number when copying it in, and don't include the crc at the end
-                                                        selectiveRepeatBuffer[packetSequenceInt][j] = packet[j + sizeof(packetSequenceNumber)];
+                                                //         // skip the sequence number when copying it in, and don't include the crc at the end
+                                                //         selectiveRepeatBuffer[packetSequenceNumber].message = packet[j + sizeof(packetSequenceNumber) - 1];
 
-                                                }
+                                                // }
 
                                                 //write packets to our output file
-                                                while(selectiveRepeatBuffer[currentSequenceNumber]){
+        cout << "isFull: " << selectiveRepeatBuffer[windowLowerBound].isFull << endl;
+                                                while(selectiveRepeatBuffer[windowLowerBound].isFull){
                                                         //
-                                                        for(int j = 0; j < packetSizeInt; j++){
-                                                                outFile << selectiveRepeatBuffer[currentSequenceNumber][j];
+
+                                                        for(int j = 0; j < packetSize; j++){
+                                                                outFile << selectiveRepeatBuffer[windowLowerBound].message[j];
                                                         }
                                                         //remove current packet from selectiveRepeatBuffer
-                                                        selectiveRepeatBuffer[currentSequenceNumber] = 0;
-                                                        //update currentSequenceNumber. Remember, it wraps around.
-                                                        currentSequenceNumber = currentSequenceNumber+1 %sequenceNumSize+1;
+                                                        selectiveRepeatBuffer[windowLowerBound].isFull = false;
                                                         //move the sliding window after effectively writing to the output file
                                                         windowLowerBound = windowLowerBound+1 %sequenceNumSize+1;
                                                         windowUpperBound = windowUpperBound+1 %sequenceNumSize+1;
@@ -267,15 +259,15 @@ int main(int argc, char const *argv[]) {
 
                                 */
 
-                                 //delete memory I allocated
-                                for(int i = 0; i < sequenceNumSizeInt; i++){
+                                //  //delete memory I allocated
+                                // for(int i = 0; i < sequenceNumSize; i++){
 
-                                        delete[] selectiveRepeatBuffer[i];
+                                //         delete[] selectiveRepeatBuffer[i];
 
-                                }
-                                delete[] selectiveRepeatBuffer;
+                                // }
+                                // delete[] selectiveRepeatBuffer;
 
-                                delete[] packet;
+                                // delete[] packet;
 
                         }
                 }
