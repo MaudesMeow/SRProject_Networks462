@@ -15,30 +15,6 @@
 
 using namespace std;
 
-//int portNumber;
-//string IPaddress;
-//int sock;               
-int valueRead;          // what is this variable?
-//int packetSize;
-//int windowSize;
-//int seqrange;
-//int nextSequenceNum = 0;
-//string line;
-//string reset;
-//string fileName;
-//string payOut = "";
-//string fileInput;
-//FILE * pFile;
-//string empty = "\n";
-
-
-typedef struct Packet{
-        public:
-                uint32_t packetID;
-                uint32_t packetSeqNum;
-                string inside;
-}pktype;
-
 //prompts the user for the IP address we're going to use to send packets.
 string UserInputPromptAddr()
 {
@@ -47,30 +23,6 @@ string UserInputPromptAddr()
         cin >> ip;
         return ip;	
 }
-
-/*
-//prompts te user for the port number
-int UserInputPromptPort()
-{
-        int port;
-        cout << "Enter port number or -1 for default (" << PORT_NUMBER << "): ";
-        cin >> port;
-        if (port < 0)
-        {
-                port = PORT_NUMBER;
-        }
-        
-        return port;
-}
-//returns name of input file.
-string UserInputPromptFile()
-{
-        string file;
-        cout << "Enter the name of your file: ";
-        cin >> file;
-        return file;
-}
-*/
 
 //returns packet size from user input
 int UserInputPromptPacket()
@@ -112,6 +64,195 @@ int UserInputPromptSequence()
         }
         
         return sequence;
+}
+
+//creates a socket using a port number and an IP address. 
+//returns the file descriptor for the socket if success, -1 if failure, and prints corresponding error message.
+int CreateSocketClient(int port, string ip)
+{
+	int sock = 0, client_fd;
+        struct sockaddr_in serv_addr;
+        
+        sock = socket(AF_INET, SOCK_STREAM, 0);
+        if (sock < 0) 
+                {
+                printf("\n Socket creation error \n");
+                return -1;
+                }
+
+        serv_addr.sin_family = AF_INET;
+        serv_addr.sin_port = htons(port);
+
+        if(inet_pton(AF_INET, ip.c_str(), &serv_addr.sin_addr)<=0){
+                printf("\n Invalid address \n");
+                return -1;
+        }
+        if((client_fd = connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) < 0) {
+                printf("\nConnection Failed \n");
+                return -1;
+        }
+	return sock;
+}
+
+
+int main(int argc, char const *argv[]) {
+
+        // initialize the crc table
+        crcTableInit();
+
+        //creates socket, gets file and packet size
+        string IPaddress;
+        if (TESTING)
+        {
+                IPaddress = "10.35.195.219"; // IP for Poseidon0
+        } else {
+                IPaddress = UserInputPromptAddr();
+        }
+        
+        int portNumber;
+        if (TESTING)
+        {
+                portNumber = PORT_NUMBER;
+        } else {
+                portNumber = UserInputPromptPort();
+        }
+        
+        string fileName;
+        if (TESTING)
+        {
+                fileName = "HKMclient.cpp";
+        } else {
+                fileName = UserInputPromptFile("Enter the name of the input file: ");
+        }
+        
+        int packetSize; // the max packet size
+        if (TESTING)
+        {
+                packetSize = PACKET_SIZE;
+        } else {
+                packetSize = UserInputPromptPacket();
+        }      
+
+        int windowSize;
+        if (TESTING)
+        {
+                windowSize = WINDOW_SIZE;
+        } else {
+                windowSize = UserInputPromptWindow();
+        }
+        
+        int sequenceNumSize; // the max sequence number value
+        if (TESTING)
+        {
+                sequenceNumSize = SEQUENCE_SIZE;
+        } else {
+                sequenceNumSize = UserInputPromptSequence();
+        }
+        
+        // socket creation failed, exit the program (sockets are represented by integers)
+        int sock;
+        if ((sock = CreateSocketClient(portNumber, IPaddress)) < 0) {
+                return -1;
+        }
+
+// send the packet size, window size and sequence number size to the server so they know what to use
+        int *header = new int[3]();
+        
+        header[0] = packetSize;
+        header[1] = windowSize;
+        header[2] = sequenceNumSize;
+        
+        char ackHeaderRecv; // the value we 'catch' the ack in for the header
+
+        // send the header
+        send(sock, header, HEADER_SIZE, 0);
+
+        // server sends back 1 for successful reception of header information        
+        recv(sock, &ackHeaderRecv, sizeof(ackHeaderRecv), 0);
+        if (ackHeaderRecv != '1')
+        {
+                printf("\nHeader ack not received\n");
+                return -1;
+        }
+        
+        //creates an ifstream named "readStream" that reads from the user's selected file
+        ifstream readStream(fileName);
+        char placeHolder;        
+        string fileInput =""; // this is what we send to the server
+        int currentSequenceNum = 0; // the sequence number of the packet we are reading from the file. Always needs to be in the window. Might be the same as window upper bound?
+
+        // defining our packet struct to keep track of the timeouts for each one we send
+        typedef struct Packet{
+        public:
+                int sequenceNum; // for reference, might not be needed. should be equal to the index of the srpBuffer array
+                uint64_t timeLastSent; // used in timeout for each packet we send
+                char *payload; // this is what gets sent to server
+                }packet;
+
+        // our selective repeat buffer to store the packtes in until they are acked
+        packet srpBuffer[sequenceNumSize + 1];
+
+        int windowUpperBound, windowLowerBound; // these define our window on the client
+
+        //while we haven't hit the end of the file, start sending packets.
+        while(!readStream.eof()){
+
+                // create the next packet and add it to the sr buffer at the correct index
+                packet nextPacket;
+                srpBuffer[currentSequenceNum] = nextPacket;
+
+                // start with the sequence number we are on
+                nextPacket.sequenceNum = currentSequenceNum; // to use as reference later (if needed)
+                nextPacket.payload = new char[packetSize + BYTES_OF_PADDING]();
+
+                // putting the sequence number at the front of the packet
+                nextPacket.payload[0] = (char) ((currentSequenceNum & 0xFF000000) >> 24); 
+                nextPacket.payload[1] = (char) ((currentSequenceNum & 0x00FF0000) >> 16);
+                nextPacket.payload[2] = (char) ((currentSequenceNum & 0x0000FF00) >> 8);
+                nextPacket.payload[3] = (char)  (currentSequenceNum & 0x000000FF);
+
+                int payloadSize = 0; // actual number of bytes read in from file
+
+                //pull characters from readStream until payload == one packet.
+                for (int i = 0; (i < packetSize) && readStream.get(placeHolder); i++){
+                        nextPacket.payload[i+sizeof(currentSequenceNum)] = placeHolder;
+                        payloadSize++;
+                }
+
+
+                //calculate the crc and add it to the end of the file
+                crc newcrc = crcFun(&nextPacket.payload[0], payloadSize + sizeof(currentSequenceNum));
+        cout << "crc: " << newcrc << endl;
+                nextPacket.payload[payloadSize + sizeof(currentSequenceNum)]     = (char) ((newcrc & 0xFF000000) >> 24);
+                nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 1] = (char) ((newcrc & 0x00FF0000) >> 16);
+                nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 2] = (char) ((newcrc & 0x0000FF00) >> 8);
+                nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 3] = (char)  (newcrc & 0x000000FF);
+                
+                int bufsize = (payloadSize + BYTES_OF_PADDING); // size of packet to send
+
+                //if payload is bigger than just the sequence number and crc, we have a packet to send.
+                //send the packet and its size to the server, and tell the user we did it.
+                if(bufsize > BYTES_OF_PADDING){
+        cout << "bytes sent: " << bufsize << endl;
+                        send(sock, &bufsize, sizeof(bufsize), 0);
+                        send(sock, nextPacket.payload, bufsize, 0);
+                }
+
+// receiving our ack here.
+// TODO: implement this shiz.
+                int ackReceived;
+                recv(sock, &ackReceived, sizeof(ackReceived), 0);
+
+                // update the sequence number
+                currentSequenceNum = (currentSequenceNum + 1) % (sequenceNumSize + 1);
+
+        }
+
+        //we're done sending packets. finish everything up.
+        cout << "Packets sent. Complete"<< endl;
+        string verify = "md5sum " + fileName;
+        system(verify.c_str());
+                
 }
 
 bool* RandomlyGeneratedErrors(int sequenceSize){
@@ -205,186 +346,5 @@ bool UserPromptErrorChoice(int* sequenceSize, bool** errorArray){
                 }
                 return errorArray;
 
-
-}
-
-
-
-
-
-//creates a socket using a port number and an IP address. 
-
-//returns the file descriptor for the socket if success, -1 if failure, and prints corresponding error message.
-int CreateSocketClient(int port, string ip)
-{
-	int sock = 0, valueRead;
-
-        struct sockaddr_in serv_addr;
-        char buffer[1024] = {0};
-        if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
-                {
-                printf("\n Socket creation error \n");
-                return -1;
-                }
-
-        serv_addr.sin_family = AF_INET;
-        serv_addr.sin_port = htons(port);
-        serv_addr.sin_port = htons(port);
-
-        if(inet_pton(AF_INET, ip.c_str(), &serv_addr.sin_addr)<=0){
-                printf("\n Invalid address \n");
-                return -1;
-        }
-        if(connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-                printf("\nConnection Failed \n");
-                return -1;
-        }
-		return sock;
-}
-
-
-int main(int argc, char const *argv[]) {
-
-        bool* errorArray = NULL;
-        UserPromptErrorChoice(5, errorArray);
-
-        //creates socket, gets file and packet size
-        string IPaddress = UserInputPromptAddr();
-	int portNumber = UserInputPromptPort();
-        string fileName = UserInputPromptFile("Enter the name of the input file: ");
-        int packetSize = UserInputPromptPacket();
-        int windowSize = UserInputPromptWindow();
-        int sequenceNumSize = UserInputPromptSequence();
-
-        
-        // socket creation failed, exit the program (sockets are represented by integers)
-        int sock;
-        if (sock = CreateSocketClient(portNumber, IPaddress) < 0) {
-                return 0;
-        }
-
-// send the packet size and window size to the server so they know what to use
-        int checkStatus = 0;
-        int *header = new int[3]();
-        
-        header[0] = packetSize;
-        header[1] = windowSize;
-        header[2] = sequenceNumSize;
-        //int *ackHeaderRecv = {0};
-
-        pollfd pfd;
-        pfd.fd = sock;
-        pfd.events = POLLIN;
-        int rc;
-        int timeout = -1; // still need to implement this, but -1 means it blocks until the event occurs
-        bool ackRecv = false;
-        int *ackHeaderRecv = new int[1]();
-
-        while (ackHeaderRecv[0] != 1) // while we haven't gotten a successful ack from server
-        {
-        
-                send(sock, &header, sizeof(header), 0);
-
-                rc = poll(&pfd, 1, timeout);
-
-                if (rc < 0)
-                {
-                        printf("poll error");
-                        exit(1);
-                }
-
-                if (rc == 0)
-                {
-                        printf("poll timed out");
-                        exit(0);
-                }
-
-                // only get here if poll() found something to read from the socket
-                // server sends back 1 for successful reception of header information
-                recv(sock, ackHeaderRecv, sizeof(ackHeaderRecv), 0);
-        }
-
-
-/* old method for sending header and receiving ack
-        while (ackHeaderRecv[0] <= 0) 
-        {
-                while (ackHeaderRecv[0] == 0) 
-                {
-                send(sock, &header, sizeof(header), 0);
-                // ioctl makes sure there is information to read. Stores bytes to read in checkStatus
-                ioctl(sock, FIONREAD, &checkStatus);
-                int *ackHeaderRecv = {0};
-                if (checkStatus > 0)
-                {
-                // server sends back 1 for successful reception of header information
-                        recv(sock, ackHeaderRecv, sizeof(ackHeaderRecv), 0);
-                        // if ackHeaderRecv returns -1, print an invalid connection & close ( I think this would go here?)
-                        if (ackHeaderRecv[0] == -1) 
-                        {
-                        perror("invalid connection");
-                        exit(1);
-                        }
-                // TODO: 
-                //        Timeout implementation here at some point
-                //        have server receive this header and send the ack 
-                }
-                }
-                
-                
-        
-        }
-        //send header here *************
-*/
-        
-        // the server got the header, so we are good to continue sending the file.
-        
-                //creates a file to print to?
-                FILE *pFile = fopen(fileName.c_str(), "r");
-                //creates an ifstream named "readStream" that reads from the user's selected file
-                ifstream readStream(fileName);
-                char placeHolder;
-                ostringstream temp;
-                string fileInput;
-
-                //while we haven't hit the end of the file, start sending packets.
-                while(!readStream.eof()){
-
-                        fileInput.clear();
-                        //payOut.clear();
-
-                        //pull characters from readStream until fileInput == one packet.
-                        for (int i = 0; i < packetSize && readStream.get(placeHolder); i++){
-                                fileInput.push_back(placeHolder);
-                        }
-
-                        int nextSequenceNum = 0;
-                        //if fileInput isn't empty, we have a packet to send.
-                        //send the packet and its size to the server, and tell the user we did it.
-                        if(!fileInput.empty()){
-                                //payOut.append(fileInput);
-                                nextSequenceNum++;
-                                int bufsize = fileInput.length();
-                                send(sock, &bufsize, sizeof(bufsize), 0);
-                                send(sock, fileInput.data(), fileInput.size(), 0);
-                                cout << "Packet " << nextSequenceNum << " sent: " << endl;
-                        }
-
-                }
-
-                //we're done sending packets. finish everything up.
-                cout << "Packets sent. Complete"<< endl;
-                string verify = "md5sum " + fileName;
-                system(verify.c_str());
-        
-        // server never acked the header, so we don't know that the connection is solid.
-        /*else {
-                cout << "Couldn't verify header info with server, exiting now." << endl;
-                return 0;
-        }*/
-        
-        
-
-        
-        
 
 }
