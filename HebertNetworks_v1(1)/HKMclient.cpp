@@ -255,6 +255,17 @@ int main(int argc, char const *argv[]) {
                 
 }
 
+
+void receivingAck(bool *errorArray){
+        if (!errorArray == NULL && errorArray[ackNum] ){
+                cout << "ack number " << ackNum << " has been dropped!" << endl; 
+                errorArray[ackNum] = false;
+                exit(1);
+        }
+
+
+}
+
 bool* RandomlyGeneratedErrors(int sequenceSize){
         //allocate memory for new bool array length of sequence
         bool *errors = new bool[sequenceSize](); 
