@@ -23,7 +23,7 @@ clean:
 # create a zip file for our project, removing the old one if it exists
 archive:
 	if [ -f HKMSRP.zip ]; then rm HKMSRP.zip; fi
-	zip HKMSRP.zip *.cpp *.h makefile
+	zip HKMSRP.zip *.cpp *.h makefile 10kbtestfile.in
 
 # create a zip file, then send it to poseidon server
 olivertoposeidon: archive
@@ -37,7 +37,10 @@ alextoposeidon: archive
 
 # remove the old code and replace it from the zip file, then get rid of the zip file
 unzip:
-	rm *.cpp *.h makefile
+	if [ -f HKMSRP.zip ]; then actuallyunzip; fi
+
+actuallyunzip:
+	rm *.cpp *.h makefile 10kbtestfile.in
 	unzip HKMSRP.zip
 	rm HKMSRP.zip
 

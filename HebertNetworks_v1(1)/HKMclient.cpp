@@ -97,6 +97,9 @@ int CreateSocketClient(int port, string ip)
 
 int main(int argc, char const *argv[]) {
 
+        // initialize the crc table
+        crcTableInit();
+
         //creates socket, gets file and packet size
         string IPaddress;
         if (TESTING)
@@ -117,7 +120,7 @@ int main(int argc, char const *argv[]) {
         string fileName;
         if (TESTING)
         {
-                fileName = "HKMclient.h";
+                fileName = "HKMclient.cpp";
         } else {
                 fileName = UserInputPromptFile("Enter the name of the input file: ");
         }
@@ -183,7 +186,7 @@ int main(int argc, char const *argv[]) {
         public:
                 int sequenceNum; // for reference, might not be needed
                 uint64_t timeLastSent; // used in timeout for each packet we send
-                string payload = ""; // this is what gets sent to server
+                char *payload; // this is what gets sent to server
                 }packet;
 
         // our selective repeat buffer to store the packtes in until they are acked
@@ -193,33 +196,47 @@ int main(int argc, char const *argv[]) {
 
         //while we haven't hit the end of the file, start sending packets.
         while(!readStream.eof()){
-                
+
                 // create the next packet and add it to the sr buffer at the correct index
                 packet nextPacket;
                 srpBuffer[currentSequenceNum] = nextPacket;
 
                 // start with the sequence number we are on
                 nextPacket.sequenceNum = currentSequenceNum; // to use as reference later (if needed)
-                nextPacket.payload = to_string(currentSequenceNum); // putting the sequence number at the front of the packet
+                nextPacket.payload = new char[packetSize + BYTES_OF_PADDING]();
 
+                // putting the sequence number at the front of the packet
+                nextPacket.payload[0] = (char) (currentSequenceNum & 0xFF000000) >> 24; 
+                nextPacket.payload[1] = (char) (currentSequenceNum & 0x00FF0000) >> 16;
+                nextPacket.payload[2] = (char) (currentSequenceNum & 0x0000FF00) >> 8;
+                nextPacket.payload[3] = (char) (currentSequenceNum & 0x000000FF);
+
+                int payloadSize = 0;
                 //pull characters from readStream until payload == one packet.
-                for (int i = 0; i < packetSize && readStream.get(placeHolder); i++){
-                        nextPacket.payload.push_back(placeHolder);
+                for (int i = 0; (i < packetSize) && readStream.get(placeHolder); i++){
+                        nextPacket.payload[i+sizeof(currentSequenceNum)] = placeHolder;
+                        payloadSize++;
                 }
 
+
                 //calculate the crc and add it to the end of the file
-                crc newcrc = crcFun(nextPacket.payload.data(), nextPacket.payload.size());
-                nextPacket.payload += to_string(newcrc);
+                crc newcrc = crcFun(&nextPacket.payload[0], payloadSize);
+        cout << "crc: " << newcrc << endl;
+                nextPacket.payload[payloadSize + sizeof(currentSequenceNum)]     = (char) (newcrc & 0xFF000000) >> 24;
+                nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 1] = (char) (newcrc & 0x00FF0000) >> 16;
+                nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 2] = (char) (newcrc & 0x0000FF00) >> 8;
+                nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 3] = (char) (newcrc & 0x000000FF);
+        cout << "crc from payload: " << nextPacket.payload[payloadSize + sizeof(currentSequenceNum)] << nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 1] << nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 2] << nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 3] << endl;
 
-
+                int bufsize = (payloadSize + BYTES_OF_PADDING);
 
                 //if payload is bigger than just the sequence number and crc, we have a packet to send.
                 //send the packet and its size to the server, and tell the user we did it.
-                if(!(nextPacket.payload.size() > BYTES_OF_PADDING)){
-                        int bufsize = nextPacket.payload.size();
+                if(bufsize > BYTES_OF_PADDING){
+        cout << "bytes sent: " << bufsize << endl;
                         // do we need to send twice? Can we just assume that we send a set amount each time? (packetSize + BYTES_OF_PADDING)
                         send(sock, &bufsize, sizeof(bufsize), 0);
-                        send(sock, nextPacket.payload.data(), nextPacket.payload.size(), 0);
+                        send(sock, nextPacket.payload, bufsize, 0);
                 }
 
         }

@@ -23,8 +23,8 @@ typedef unsigned int crc;
 #define INITIAL_REMAINDER 0xFFFFFFFF
 #define CHECK_VALUE 0xCBF43926
 #define CRCBYTES sizeof(crc)
-#define CRCWIDTH (8 * sizeof(crc))
-#define CRCTOPBIT (1 << (CRCWIDTH - 1))
+#define CRCBITS (8 * CRCBYTES)
+#define CRCTOPBIT (1 << (CRCBITS - 1))
 
 void crcTableInit();
 crc crcFun(char *message, int nBytes);

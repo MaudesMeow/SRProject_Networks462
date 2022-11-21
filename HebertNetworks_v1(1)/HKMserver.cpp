@@ -77,6 +77,9 @@ int CreateSocketServer(int port){
 
 int main(int argc, char const *argv[]) {
         
+        // initialize the crc table
+        crcTableInit();
+
         int portNumber;
         if (TESTING)
         {
@@ -115,8 +118,9 @@ int main(int argc, char const *argv[]) {
         char ack = '1';
         send(sock, &ack, sizeof(ack), 0);
 
-        int n;
+        
         ofstream outFile;
+        outFile.open(fileName, ios::out | ios::app);
         int numOfPackets = 0;
         int bufferSize = 0;
         int currentSequenceNumber = 0;        //sequence number used by selective repeat algorithm
@@ -128,26 +132,30 @@ int main(int argc, char const *argv[]) {
         int packetSizeInt = packetSize; 
         int sequenceNumSizeInt = sequenceNumSize;
 
+        int checkStatus;
 
         // TODO: We need to put a loop here to keep reading. Not sure this diff one is the best way to go about it?
-
+        while (true)
+        {
+        
         // //while the difference between the start time and the end time is < 10,000 milliseconds
         // while(diff.count() < 10000) {
                 // diff = duration_cast<milliseconds>(end-start);
                 // end = Clock::now();
-                string received = "";
-//                int checkStatus = 0;
+                checkStatus = 0;
                 // 
 
-                // ioctl(sock, FIONREAD, &checkStatus); //used to check if the socket is working.
-                // //if the socket is good,
-                // if(checkStatus > 0) {
+                ioctl(sock, FIONREAD, &checkStatus); //used to check if the socket is working.
+                //if the socket is good,
+                if(checkStatus > 0) {
                         // recv is a funciton that reads from the socket and returns the number of bytes it read.
                         // do we need to send two messages here? Can we assume a set amount is sent each time? (packetSize + BYTES_OF_PADDING)
-                        if((n = recv(sock, &bufferSize, sizeof(bufferSize), 0)) > 0) {
+                        
+                        int n = recv(sock, &bufferSize, sizeof(bufferSize), 0); // number of bytes received
+                        if(n > 0) {
                                 char buffer[bufferSize];
-                                n = recv(sock, buffer, sizeof(buffer), 0);
-                                
+                                int pktlen = recv(sock, buffer, sizeof(buffer), 0);
+                        cout << "pktlen: " << pktlen << endl;
                                 //creates selectiverepeatbuffer
                                 char** selectiveRepeatBuffer;
                                 selectiveRepeatBuffer = new char*[sequenceNumSizeInt + 1](); // want largest index to be sequenceNumSize
@@ -163,23 +171,27 @@ int main(int argc, char const *argv[]) {
                                 
                                 //this is the packet that we're going to pull from the buffer.
                                 char* packet;
-                                packet = new char[packetSizeInt]();
+                                packet = new char[pktlen]();
 
 
                                 //creates a packet by pulling characters from buffer array up to the packetsize
-                                for(int i = 0; i < packetSizeInt; i++){
+                                for(int i = 0; i < pktlen; i++){
 
                                         packet[i] = buffer[i];
 
                                 }
                                 
                                 bool passedChecksum = false;
-                                int pktlen = strlen(packet); // figure out how long our packet is so we can pull the last 4 chars from it. That's where the crc is
-                cout << "pktlen: " << pktlen << endl;
-                                crc crcFromClient = ((packet[pktlen-4] << 24) + (packet[pktlen-3] << 16) + (packet[pktlen-2] << 8) + packet[pktlen-1]);
+                                                                
+                                crc crcFromClient = (((((unsigned int) packet[pktlen-4]) << 24) & 0xFF000000) | 
+                                                     ((((unsigned int) packet[pktlen-3]) << 16) & 0x00FF0000) |
+                                                     ((((unsigned int) packet[pktlen-2]) << 8)  & 0x0000FF00) |
+                                                      (((unsigned int) packet[pktlen-1])        & 0x000000FF));
                 cout << "crcFromClient: " << crcFromClient << endl;
-                                crc crcCalculated = crcFun(packet, pktlen - sizeof(crc)); // don't include the crc at the end of the packet when we are calculating it.
+                                
+                                crc crcCalculated = crcFun(&packet[0], pktlen - sizeof(crc)); // don't include the crc at the end of the packet when we are calculating it.
                 cout << "crcCalculated: " << crcCalculated << endl;
+                                
                                 if (crcFromClient == crcCalculated)
                                 {
                                         passedChecksum = true;
@@ -266,8 +278,8 @@ int main(int argc, char const *argv[]) {
                                 delete[] packet;
 
                         }
-            //    }
-       // }
+                }
+       }
         string check = "md5sum " + fileName;
         outFile.close();
         std::system(check.c_str());

@@ -43,7 +43,7 @@ void crcTableInit() {
     for (dividend = 0; dividend < 256; ++dividend) {
 
         // start with dividend followed by zeroes
-        remainder = dividend << (CRCWIDTH - 8);
+        remainder = dividend << (CRCBITS - 8);
 
         // division, bit by bit
         for (bit = 8; bit > 0; --bit) {
@@ -67,7 +67,7 @@ crc crcFun(char *message, int nBytes) {
 
     // divide the message by the polynomial, one byte at a time.
     for (byte = 0; byte < nBytes; ++byte) {
-        data = message[byte] ^ (remainder >> (CRCWIDTH - 8));
+        data = message[byte] ^ (remainder >> (CRCBITS - 8));
         remainder = crcTable[data] ^ (remainder << 8);
     }
 
