@@ -33,7 +33,7 @@ jordantoposeidon: archive
 	scp HKMSRP.zip hebertj4194@poseidon0.cs.uwec.edu:/USERS/ALL/HEBERTJ4194/CS462Test
 
 alextoposeidon: archive
-	scp HKMSRP.zip {Kamkeam5583}@poseidon0.cs.uwec.edu:/USERS/ALL/{Kamkeam5583}/{networks/networks2}
+	scp HKMSRP.zip Kamkeam5583@poseidon0.cs.uwec.edu:/USERS/ALL/Kamkeam5583/networks/networks2
 
 # remove the old code and replace it from the zip file, then get rid of the zip file
 unzip:
