@@ -8,7 +8,7 @@ int UserInputPromptPacket();
 int UserInputPromptWindow();
 int UserInputPromptSequence();
 int CreateSocketClient(int port, std::string ip);
-int sendKillswitch(int sock);
+void sendKillswitch(int sock);
 int UserInputPromptTimeout();
 auto generateTimeoutFromPing(std::string ip);
 int pingServer(std::string ip, int numPings);

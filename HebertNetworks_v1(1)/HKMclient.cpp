@@ -80,7 +80,6 @@ int UserInputPromptTimeout()
 auto generateTimeoutFromPing(string ip) 
 {
         int pingCount = 10;
-        int timeout;
         chrono::high_resolution_clock::time_point pingStart;
         chrono::high_resolution_clock::time_point pingEnd;
 
@@ -150,11 +149,10 @@ int CreateSocketClient(int port, string ip)
 	return sock;
 }
 
-int sendKillswitch(int sock) 
+void sendKillswitch(int sock) 
 {
         // this tells the server we are done
         packet killswitch;
-        char *message = "byeeeee";
         killswitch.payload = new char[7 + BYTES_OF_PADDING]();
         // putting the sequence number at the front of the packet
         killswitch.payload[0] = (char) ((-1 & 0xFF000000) >> 24); 
@@ -262,7 +260,7 @@ int main(int argc, char const *argv[]) {
         int *packetsToCorrupt;
         int corruptPacketCount;
 
-        switch (UserInputPromptErrorGenerationMethod("packet corrupted")){
+        switch (UserInputPromptErrorGenerationMethod("packet corrupted"))
         {
         case 0: // no generated errors
                 corruptPacketCount = 0;
@@ -473,7 +471,7 @@ int main(int argc, char const *argv[]) {
                                 
                         }
 
-                }else{
+                } else {
                         //we've recieved the ack for this packet, but it isn't the lowerbound one.
                         srpBuffer[ackReceived].isAcked = true;
                 }
@@ -488,75 +486,3 @@ int main(int argc, char const *argv[]) {
         system(verify.c_str());
                 
 }
-/*
-
-
-
-
-int UserInputPromptError(string errorType){
-
-        int userInput;
-        cout << "How would you like to generate errors?" << endl;
-        cout << "Randomly Generated. (press 1) " << endl;
-        cout << "User Input (press 2)." << endl;
-        cout << "None (Enter any other value)." << endl;
-        cin >> userInput;
-
-        switch(userInput){
-        case 1 : 
-                return 1;
-        case 2: 
-                return 2;
-        default: 
-                return 0;
-
-        }
-
-
-}
-
-
-int NumberOfAcksToLose(){
-
-        int ackCount;
-        cout << "How many acks would you like to lose" << endl;
-
-        cin >> ackCount;
-
-        return ackCount;
-}
-
-
-int *UserInputPromptsAcksToLose(int ackCount) {
-
-        int *acksToLose = new int [ackCount]();
-
-        cout << "Enter those packet numbers please!" << endl;
-        for (int i = 0; i < ackCount; i ++) {
-                cin >> acksToLose[i];
-
-        }
-
-        return acksToLose;
-}
-
-
-int RandomlyGenerateAckCount(){
-        srand(time(NULL));
-        int ackCount = rand() %200 + 5;
-
-
-}
-
-
-int *RandomGeneratedAcksToLose(int ackCount){
-        int *acksToLose = new int[ackCount]();
-        srand(time(NULL));
-        for (int i = 0; i < ackCount; i++) {
-                acksToLose[i] % 2000000;
-        }
-        return acksToLose;
-}
-*/
-
-

@@ -80,6 +80,7 @@ int randomGeneratedErrorCount()
 {
         srand (time(NULL));
         int count = rand() % 200 + 5;
+        return count;
 }
 
 /* generate count random numbers between 0 and 2 million, and return them in an array */

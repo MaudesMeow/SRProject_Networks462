@@ -114,7 +114,7 @@ int main(int argc, char const *argv[]) {
         
         int *headerRecv = new int[3]();
 
-        // client sends information on bufferSize, windowSize, and sequencNumSize
+        // client sends information on packetSize, windowSize, and sequenceNumSize
         recv(sock, headerRecv, HEADER_SIZE, 0);
         int packetSize = headerRecv[0];
         int windowSize = headerRecv[1];
