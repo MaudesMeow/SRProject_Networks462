@@ -8,5 +8,7 @@ Run server with 'make runserver'
 Run client with 'make runclient' on a separate terminal
 
 
+Run server with 'make runserver'
+Run client with 'make runclient'
 
 random.txt holds the md5sum hash.

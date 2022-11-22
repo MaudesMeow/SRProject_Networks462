@@ -74,3 +74,7 @@ crc crcFun(char *message, int nBytes) {
 // the remainder is the crc
     return remainder;
 } /* crcFun() */
+
+// the remainder is the crc
+    return remainder;
+} /* crcFun() */

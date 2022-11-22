@@ -1,4 +1,3 @@
-
 G++_FLAGS= -Wall
 
 # can 'make client' to only compile the client, or just 'make' to compile both
@@ -17,6 +16,7 @@ runserver:
 	./bin/HKMserver.out
 
 # use 'make clean' to remove executable files
+# use 'make clean' to remove executable files
 clean:
 	if [ -f bin/HKMserver.out ]; then rm bin/HKMserver.out; fi
 	if [ -f bin/HKMclient.out ]; then rm bin/HKMclient.out; fi
@@ -31,7 +31,7 @@ olivertoposeidon: archive
 	scp HKMSRP.zip mahano0661@poseidon1.cs.uwec.edu:/USERS/ALL/mahano0661/newCS462
 
 jordantoposeidon: archive
-	scp HKMSRP.zip {JORDANS_UWEC_ID}@poseidon0.cs.uwec.edu:/USERS/ALL/{JORDANS_UWEC_ID}/{SOME_OTHER_FOLDER_IF_YOU_WANT}
+	scp HKMSRP.zip hebertj4194@poseidon0.cs.uwec.edu:/USERS/ALL/HEBERTJ4194/CS462Test
 
 alextoposeidon: archive
 	scp HKMSRP.zip {ALEXS_UWEC_ID}@poseidon0.cs.uwec.edu:/USERS/ALL/{ALEXS_UWEC_ID}/{SOME_OTHER_FOLDER_IF_YOU_WANT}
@@ -44,5 +44,6 @@ actuallyunzip:
 	rm *.cpp *.h makefile 10kbtestfile.in
 	unzip HKMSRP.zip
 	rm HKMSRP.zip
+
 
 
