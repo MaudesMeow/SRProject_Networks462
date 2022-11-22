@@ -87,7 +87,16 @@ int main(int argc, char const *argv[]) {
         int ackCount; // number of acks to lose
 
 
-        switch (UserInputPromptErrorGenerationMethod("ack lost"))
+        int generationMethod;
+        if (TESTING)
+        {
+                generationMethod = 1;
+        } else 
+        {
+                generationMethod = UserInputPromptErrorGenerationMethod("ack lost");
+        }
+        
+        switch (generationMethod)
         {
         case 0: // no generated errors
                 ackCount = 0;

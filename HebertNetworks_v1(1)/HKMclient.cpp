@@ -237,7 +237,16 @@ int main(int argc, char const *argv[]) {
         int *packetsToLose;
         int lostPacketCount;
 
-        switch (UserInputPromptErrorGenerationMethod("packet lost"))
+        int lostGenerationMethod;
+        if (TESTING)
+        {
+                lostGenerationMethod = 1;
+        } else 
+        {
+                lostGenerationMethod = UserInputPromptErrorGenerationMethod("packet lost");
+        }
+        
+        switch (lostGenerationMethod)
         {
                 case 0: // no generated errors
                         lostPacketCount = 0;
@@ -258,10 +267,21 @@ int main(int argc, char const *argv[]) {
 
         int indexOfNextPacketToLose = 0;
 
+
+
         int *packetsToCorrupt;
         int corruptPacketCount;
 
-        switch (UserInputPromptErrorGenerationMethod("packet corrupted"))
+        int corruptGenerationMethod;
+        if (TESTING)
+        {
+                corruptGenerationMethod = 1;
+        } else
+        {
+                corruptGenerationMethod = UserInputPromptErrorGenerationMethod("packet corrupted");
+        }
+        
+        switch (corruptGenerationMethod)
         {
         case 0: // no generated errors
                 corruptPacketCount = 0;
