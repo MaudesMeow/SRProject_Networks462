@@ -148,6 +148,27 @@ int main(int argc, char const *argv[]) {
         } else {
                 sequenceNumSize = UserInputPromptSequence();
         }
+
+        int *acksToLose;
+        int ackCount;
+
+        switch (UserInputPromptError("ack...ahh")){
+                case 0:
+                        ackCount = 0;
+                        acksToLose = new int[0]();
+                        break;
+                case 1:
+                        ackCount = RandomlyGenerateAckCount();
+                        acksToLose = RandomGeneratedAcksToLose(ackCount);
+                        break;
+                case 2: 
+                        ackCount = NumberOfAcksToLose();
+                        acksToLose = UserInputPromptsAcksToLose(ackCount);
+                        break;
+                default:
+                        return -1; 
+        
+        }
         
         
 
@@ -263,75 +284,70 @@ int main(int argc, char const *argv[]) {
 }
 
 
-void receivingAck(int &ackReceived, bool *errorArray){
-        if (!errorArray == NULL && errorArray[ackReceived] ){
-                cout << "ack number " << ackReceived << " has been dropped!" << endl; 
-                errorArray[ackReceived] = false;
-                exit(1);
-        } 
-        
 
 
-}
+int UserInputPromptError(string errorType){
 
-int * UserPromptErrorChoice(){
-        string userInput = "";
-        int errorArray[] = {};
+        int userInput;
         cout << "How would you like to generate errors?" << endl;
-        cout << "Default: Randomly Generated. (Press Enter) " << endl;
-        cout << "User Input (press 1)." << endl;
-        cout << "None (press 2)." << endl;
-
-        
+        cout << "Randomly Generated. (press 1) " << endl;
+        cout << "User Input (press 2)." << endl;
+        cout << "None (Enter any other value)." << endl;
         cin >> userInput;
-        
-        if (userInput.empty()) {
-                userInput = "-1"; 
+
+        switch(userInput){
+        case 1 : 
+                return 1;
+        case 2: 
+                return 2;
+        default: 
+                return 0;
+
         }
 
-        if (!userInput.empty()) {
-                
-                if (userInput == "-1"){
-                        int sizeOfRandomErrorArray = 1000;
-                        int *errorArray = new int[sizeOfRandomErrorArray]();
 
-                        for (int ii = 0; ii < errorArray.size(); ii++) {
-                                if ((rand() % 100 + 1 ) <= 10) {
-                                        errorArray[ii];
-                                }
-                        }
-                        return errorArray;
-                } else if(userInput == "1"){
-                        string userInput;
-                        string inputIndexValue;;
-                        int sizeOfUserErrorArray;
-                        cout << "How many values would you like to put in?" << endl;
-                        cin >> sizeOfUserErrorArray;
-                        cout << "enter the values (in order) for which packets you would like to cause an error" << endl;
-                        getline(cin, userInput);
-
-                        int *errorArray = new int[sizeOfUserErrorArray]();
-                        
-                        
-                         //string stream in, able to seperate user input by space
-                        stringstream ssin(userInput);
-        
-                        //while there are still numbers add each to correct place in errors array
-                         while (ssin >> inputIndexValue){
-                
-                        // stoi == string object integer (I think), converts string to integer value
-                                errorArray[stoi(inputIndexValue)];
-                         }
-
-                        return errorArray;
-
-                } else if(userInput == "2") {
-                        int *errorArray = new int[1]();
-                        return errorArray;
-                }
-
-                return NULL;
-        
-        }     
-        
 }
+
+
+int NumberOfAcksToLose(){
+
+        int ackCount;
+        cout << "How many acks would you like to lose" << endl;
+
+        cin >> ackCount;
+
+        return ackCount;
+}
+
+
+int *UserInputPromptsAcksToLose(int ackCount) {
+
+        int *acksToLose = new int [ackCount]();
+
+        cout << "Enter those packet numbers please!" << endl;
+        for (int i = 0; i < ackCount; i ++) {
+                cin >> acksToLose[i];
+
+        }
+
+        return acksToLose;
+}
+
+
+int RandomlyGenerateAckCount(){
+        srand(time(NULL));
+        int ackCount = rand() %200 + 5;
+
+
+}
+
+
+int *RandomGeneratedAcksToLose(int ackCount){
+        int *acksToLose = new int[ackCount]();
+        srand(time(NULL));
+        for (int i = 0; i < ackCount; i++) {
+                acksToLose[i] % 2000000;
+        }
+        return acksToLose;
+}
+
