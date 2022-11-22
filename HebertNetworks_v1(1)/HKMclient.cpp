@@ -106,6 +106,7 @@ int main(int argc, char const *argv[]) {
         // initialize the crc table
         crcTableInit();
 
+        //testing means we're using default values
         //creates socket, gets file and packet size
         string IPaddress;
         if (TESTING)
@@ -196,6 +197,8 @@ int main(int argc, char const *argv[]) {
                 int sequenceNum; // for reference, might not be needed. should be equal to the index of the srpBuffer array
                 uint64_t timeLastSent; // used in timeout for each packet we send
                 char *payload; // this is what gets sent to server
+                bool isFull; //determines whether this packet is "zeroed", meaning we can write over it and ignore it.
+                bool isAcked; //is this packed acked?
                 }packet;
 
         typedef struct window{
@@ -208,64 +211,94 @@ int main(int argc, char const *argv[]) {
         // our selective repeat buffer to store the packtes in until they are acked
         packet srpBuffer[sequenceNumSize + 1];
 
-        int windowUpperBound, windowLowerBound; // these define our window on the client
+        int windowUpperBound = windowSize;
+        int windowLowerBound = 0; // these define our window on the client
 
         //while we haven't hit the end of the file, start sending packets.
         while(!readStream.eof()){
+                if((!((windowLowerBound < windowUpperBound) && (currentSequenceNum > windowUpperBound || currentSequenceNum < windowLowerBound))
+                || !(currentSequenceNum > windowUpperBound && currentSequenceNum < windowLowerBound))){
 
-                // create the next packet and add it to the sr buffer at the correct index
-                packet nextPacket;
-                srpBuffer[currentSequenceNum] = nextPacket;
-
-                // start with the sequence number we are on
-                nextPacket.sequenceNum = currentSequenceNum; // to use as reference later (if needed)
-                nextPacket.payload = new char[packetSize + BYTES_OF_PADDING]();
-
-                // putting the sequence number at the front of the packet
-                nextPacket.payload[0] = (char) ((currentSequenceNum & 0xFF000000) >> 24); 
-                nextPacket.payload[1] = (char) ((currentSequenceNum & 0x00FF0000) >> 16);
-                nextPacket.payload[2] = (char) ((currentSequenceNum & 0x0000FF00) >> 8);
-                nextPacket.payload[3] = (char)  (currentSequenceNum & 0x000000FF);
-
-                int payloadSize = 0; // actual number of bytes read in from file
-
-                //pull characters from readStream until payload == one packet.
-                for (int i = 0; (i < packetSize) && readStream.get(placeHolder); i++){
-                        nextPacket.payload[i+sizeof(currentSequenceNum)] = placeHolder;
-                        payloadSize++;
-                }
-
-
-                //calculate the crc and add it to the end of the file
-                crc newcrc = crcFun(&nextPacket.payload[0], payloadSize + sizeof(currentSequenceNum));
-        cout << "crc: " << newcrc << endl;
-                nextPacket.payload[payloadSize + sizeof(currentSequenceNum)]     = (char) ((newcrc & 0xFF000000) >> 24);
-                nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 1] = (char) ((newcrc & 0x00FF0000) >> 16);
-                nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 2] = (char) ((newcrc & 0x0000FF00) >> 8);
-                nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 3] = (char)  (newcrc & 0x000000FF);
                 
-                int bufsize = (payloadSize + BYTES_OF_PADDING); // size of packet to send
+                        // create the next packet and add it to the sr buffer at the correct index
+                        packet nextPacket;
 
-                //if payload is bigger than just the sequence number and crc, we have a packet to send.
-                //send the packet and its size to the server, and tell the user we did it.
-                if(bufsize > BYTES_OF_PADDING){
-        cout << "bytes sent: " << bufsize << endl;
-                        send(sock, &bufsize, sizeof(bufsize), 0);
-                        send(sock, nextPacket.payload, bufsize, 0);
+
+                        // start with the sequence number we are on
+                        nextPacket.sequenceNum = currentSequenceNum; // to use as reference later (if needed)
+                        nextPacket.payload = new char[packetSize + BYTES_OF_PADDING]();
+
+                        // putting the sequence number at the front of the packet
+                        nextPacket.payload[0] = (char) ((currentSequenceNum & 0xFF000000) >> 24); 
+                        nextPacket.payload[1] = (char) ((currentSequenceNum & 0x00FF0000) >> 16);
+                        nextPacket.payload[2] = (char) ((currentSequenceNum & 0x0000FF00) >> 8);
+                        nextPacket.payload[3] = (char)  (currentSequenceNum & 0x000000FF);
+                        nextPacket.isFull = true; //this packet should be taken seriously, as it exists.
+                        nextPacket.isAcked = false;
+
+                        int payloadSize = 0; // actual number of bytes read in from file
+
+                        //pull characters from readStream until payload == one packet.
+                        for (int i = 0; (i < packetSize) && readStream.get(placeHolder); i++){
+                                nextPacket.payload[i+sizeof(currentSequenceNum)] = placeHolder;
+                                payloadSize++;
+                        }
+
+
+                        //calculate the crc and add it to the end of the file
+                        crc newcrc = crcFun(&nextPacket.payload[0], payloadSize + sizeof(currentSequenceNum));
+                cout << "crc: " << newcrc << endl;
+                        nextPacket.payload[payloadSize + sizeof(currentSequenceNum)]     = (char) ((newcrc & 0xFF000000) >> 24);
+                        nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 1] = (char) ((newcrc & 0x00FF0000) >> 16);
+                        nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 2] = (char) ((newcrc & 0x0000FF00) >> 8);
+                        nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 3] = (char)  (newcrc & 0x000000FF);
+                        
+                        int bufsize = (payloadSize + BYTES_OF_PADDING); // size of packet to send
+
+                        
+                        //if payload is bigger than just the sequence number and crc, we have a packet to send.
+                        //send the packet and its size to the server, and tell the user we did it.
+                        if(bufsize > BYTES_OF_PADDING){
+                cout << "bytes sent: " << bufsize << endl;
+                                send(sock, &bufsize, sizeof(bufsize), 0);
+                                send(sock, nextPacket.payload, bufsize, 0);
+                        }
+
+                        //we're waiting on the ack for this now.
+                        srpBuffer[currentSequenceNum] = nextPacket;
+
+                        // update the current sequence number
+                        currentSequenceNum = (currentSequenceNum + 1) % (sequenceNumSize + 1);
                 }
 
-// receiving our ack here.
-// TODO: implement this shiz.
+                // receiving our ack here.
+                // TODO: implement this shiz.
                 int ackReceived;
                 recv(sock, &ackReceived, sizeof(ackReceived), 0);
 
-                
+                //if we recieved an ack for the lower bound of our window, we need to make sure we aren't waiting on stuff anymore.
+                if(ackReceived == windowLowerBound){
+                                
+                        //clear this index. This packet "doesn't exist" as far as we are concerned.
+                        srpBuffer[ackReceived].isFull = false;
 
+                        //slide the window
+                        windowLowerBound ++;
+                        windowUpperBound ++;
 
+                        //make sure we move the window to compensate for all other previously recieved acks for packets that we've recorded.
+                        while(srpBuffer[windowLowerBound].isAcked && srpBuffer[windowLowerBound].isFull){
 
+                                srpBuffer[windowLowerBound].isFull = false;
+                                windowLowerBound ++;
+                                windowUpperBound ++;
+                                
+                        }
 
-                // update the sequence number
-                currentSequenceNum = (currentSequenceNum + 1) % (sequenceNumSize + 1);
+                }else{
+                        //we've recieved the ack for this packet, but it isn't the lowerbound one.
+                        srpBuffer[ackReceived].isAcked = true;
+                }
 
         }
 
