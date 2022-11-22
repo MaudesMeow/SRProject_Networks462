@@ -91,7 +91,6 @@ int main(int argc, char const *argv[]) {
         {
         case 0: // no generated errors
                 ackCount = 0;
-                acksToLose = new int[0]();
                 break;
         
         case 1: // randomly generated errors

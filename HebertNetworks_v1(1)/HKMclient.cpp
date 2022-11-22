@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <poll.h>
+#include <algorithm>
 #include <chrono>
 
 #include "HKMclient.hpp"
@@ -235,27 +236,51 @@ int main(int argc, char const *argv[]) {
                 sequenceNumSize = UserInputPromptSequence();
         }
 
-        int *acksToLose;
-        int ackCount;
+        int *packetsToLose;
+        int lostPacketCount;
 
-        switch (UserInputPromptError("ack...ahh")){
-                case 0:
-                        ackCount = 0;
-                        acksToLose = new int[0]();
+        switch (UserInputPromptErrorGenerationMethod("packet lost")){
+                case 0: // no generated errors
+                        lostPacketCount = 0;
                         break;
-                case 1:
-                        ackCount = RandomlyGenerateAckCount();
-                        acksToLose = RandomGeneratedAcksToLose(ackCount);
+                case 1: // randomly generated errors
+                        lostPacketCount = randomGeneratedErrorCount();
+                        packetsToLose = randomGeneratedErrorArray(lostPacketCount);
                         break;
-                case 2: 
-                        ackCount = NumberOfAcksToLose();
-                        acksToLose = UserInputPromptsAcksToLose(ackCount);
+                case 2: // user generated errors
+                        lostPacketCount = UserInputPromptErrorCount("packets to lose");
+                        packetsToLose = UserInputPromptGenerateErrorArray(lostPacketCount, "packets to lose");
                         break;
-                default:
-                        return -1; 
-        
+                default: // didn't follow directions
+                        return -1;         
+        }
+
+        sort(packetsToLose, packetsToLose+lostPacketCount); // our packets to lose array is sorted.
+
+        int indexOfNextPacketToLose = 0;
+
+        int *packetsToCorrupt;
+        int corruptPacketCount;
+
+        switch (UserInputPromptErrorGenerationMethod("packet corrupted")){
+        {
+        case 0: // no generated errors
+                corruptPacketCount = 0;
+                break;
+        case 1: // randomly generated errors
+                corruptPacketCount = randomGeneratedErrorCount();
+                packetsToCorrupt = randomGeneratedErrorArray(corruptPacketCount);
+        case 2: // user generated errors
+                corruptPacketCount = UserInputPromptErrorCount("packets to corrupt");
+                packetsToCorrupt = UserInputPromptGenerateErrorArray(corruptPacketCount, "packets to corrupt");        
+        default: // something went wrong
+                return -1;
         }
         
+        sort(packetsToCorrupt, packetsToCorrupt+corruptPacketCount); // our packets to corrupt array is sorted.
+
+        int indexOfNextPacketToCorrupt = 0;
+
         chrono::nanoseconds timeout; // time we allow to pass without receiving an ack before resending a packet
         int userTimeout;
         if (TESTING)
@@ -370,14 +395,52 @@ int main(int argc, char const *argv[]) {
                         
                         int bufsize = (payloadSize + BYTES_OF_PADDING); // size of packet to send
 
-                        
-                        //if payload is bigger than just the sequence number and crc, we have a packet to send.
-                        //send the packet and its size to the server, and tell the user we did it.
-                        if(bufsize > BYTES_OF_PADDING){
-                cout << "bytes sent: " << bufsize << endl;
-                                send(sock, &bufsize, sizeof(bufsize), 0);
-                                send(sock, nextPacket.payload, bufsize, 0);
-                        }
+                       if ((lostPacketCount != 0) && (currentSequenceNum == packetsToLose[indexOfNextPacketToLose]))
+                       {
+                                indexOfNextPacketToLose++;
+                                if (indexOfNextPacketToLose == lostPacketCount)
+                                {
+                                        lostPacketCount = 0;
+                                }
+                       } else if ((corruptPacketCount !=0) && (currentSequenceNum == packetsToCorrupt[indexOfNextPacketToCorrupt]))
+                       {
+                                packet tempPacket;
+                                tempPacket.payload = new char[packetSize + BYTES_OF_PADDING]();
+
+                                // copy the payload to a new packet so we can corrupt it when we send it but still save the uncorrupted version
+                                for (int i = 0; i < packetSize + BYTES_OF_PADDING; i++)
+                                {
+                                        tempPacket.payload[i] = nextPacket.payload[i];
+                                }
+                                tempPacket.isAcked = false;
+                                tempPacket.isFull = true;
+                                
+                                char temp = tempPacket.payload[0];
+                                tempPacket.payload[0] = temp++; // makes sure this value gets changed
+                                indexOfNextPacketToCorrupt++;
+
+                                if (indexOfNextPacketToCorrupt == corruptPacketCount)
+                                {
+                                        corruptPacketCount = 0;
+                                }
+
+                                //if payload is bigger than just the sequence number and crc, we have a packet to send.
+                                //send the packet and its size to the server, and tell the user we did it.
+                                if(bufsize > BYTES_OF_PADDING){
+                                        cout << "bytes sent: " << bufsize << endl;
+                                        send(sock, &bufsize, sizeof(bufsize), 0);
+                                        send(sock, nextPacket.payload, bufsize, 0);
+                                }
+                       } else
+                       {
+                                //if payload is bigger than just the sequence number and crc, we have a packet to send.
+                                //send the packet and its size to the server, and tell the user we did it.
+                                if(bufsize > BYTES_OF_PADDING){
+                                        cout << "bytes sent: " << bufsize << endl;
+                                        send(sock, &bufsize, sizeof(bufsize), 0);
+                                        send(sock, nextPacket.payload, bufsize, 0);
+                                }
+                       }
 
                         //we're waiting on the ack for this now.
                         srpBuffer[currentSequenceNum] = nextPacket;
