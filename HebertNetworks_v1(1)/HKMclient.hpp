@@ -10,7 +10,8 @@ int UserInputPromptSequence();
 int CreateSocketClient(int port, std::string ip);
 int sendKillswitch(int sock);
 int UserInputPromptTimeout();
-int generateTimeoutFromPing(std::string ip);
+auto generateTimeoutFromPing(std::string ip);
+int pingServer(std::string ip, int numPings);
 
 // defining our packet struct to keep track of the timeouts for each one we send
 typedef struct Packet{

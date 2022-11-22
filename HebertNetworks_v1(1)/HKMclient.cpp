@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <poll.h>
+#include <chrono>
 
 #include "HKMclient.hpp"
 #include "HKMcommon.hpp"
@@ -75,9 +76,49 @@ int UserInputPromptTimeout()
         return timeout;
 }
 
-int generateTimeoutFromPing(string ip) 
+auto generateTimeoutFromPing(string ip) 
 {
+        int pingCount = 10;
+        int timeout;
+        chrono::high_resolution_clock::time_point pingStart;
+        chrono::high_resolution_clock::time_point pingEnd;
 
+        pingStart = chrono::high_resolution_clock::now();
+        if (pingServer(ip, pingCount) != 0)
+        {
+                return chrono::nanoseconds(-1);
+        }
+        pingEnd = chrono::high_resolution_clock::now();
+
+        auto pingDiff = pingEnd - pingStart; // time it took for pingCount pings
+
+        return ((pingDiff / pingCount) * 16); // average time per ping, multiplied by 16 
+}
+
+// returns 0 for success, or something else for failure
+int pingServer(string ip, int numPings)
+{
+        stringstream ss;
+        string command;
+        FILE *in;
+        char buff[512];
+        int exit_code;
+
+        command = "ping -A -c " + to_string(numPings) + ip + " 2>&1";
+
+        if(!(in = popen(command.c_str(), "r"))) // open process as read only
+        {
+                return -1;
+        }
+
+        while(fgets(buff, sizeof(buff), in) != NULL)    // put response into stream
+        {
+                ss << buff;
+        }
+
+        exit_code = pclose(in); // blocks until process is done; returns exit status of command
+
+        return (exit_code == 0);
 }
 
 //creates a socket using a port number and an IP address. 
@@ -194,18 +235,27 @@ int main(int argc, char const *argv[]) {
                 sequenceNumSize = UserInputPromptSequence();
         }
         
-        int timeout; // time we allow to pass without receiving an ack before resending a packet
+        chrono::nanoseconds timeout; // time we allow to pass without receiving an ack before resending a packet
+        int userTimeout;
         if (TESTING)
         {
                 timeout = generateTimeoutFromPing(IPaddress);
         } else {
-                timeout = UserInputPromptTimeout();
-                if (timeout < 0)
+                userTimeout = UserInputPromptTimeout();
+                if (userTimeout < 0)
                 {
                         timeout = generateTimeoutFromPing(IPaddress);
+                } else {
+                        timeout = chrono::nanoseconds(userTimeout);
                 }
         }
 
+        if (timeout < chrono::nanoseconds(0))
+        {
+                cout << "timeout generation failed." << endl;
+                return -1;
+        }
+        
 
         // bool *errorArray = (bool*)malloc(sizeof(bool) * (*sequenceSize));
         // errorArray = UserPromptErrorChoice(sequenceNumSize, *errorArray);
