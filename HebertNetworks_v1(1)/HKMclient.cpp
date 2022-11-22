@@ -149,6 +149,9 @@ int main(int argc, char const *argv[]) {
                 sequenceNumSize = UserInputPromptSequence();
         }
         
+        bool *errorArray = (bool*)malloc(sizeof(bool) * (*sequenceSize))
+        errorArray = UserPromptErrorChoice(sequenceNumSize, *errorArray);
+
         // socket creation failed, exit the program (sockets are represented by integers)
         int sock;
         if ((sock = CreateSocketClient(portNumber, IPaddress)) < 0) {
@@ -188,6 +191,13 @@ int main(int argc, char const *argv[]) {
                 uint64_t timeLastSent; // used in timeout for each packet we send
                 char *payload; // this is what gets sent to server
                 }packet;
+
+        typedef struct window{
+        public:
+                int windowUpperbound; 
+                int windowLowerBound;
+                char *windowFrame;
+        }window;
 
         // our selective repeat buffer to store the packtes in until they are acked
         packet srpBuffer[sequenceNumSize + 1];
@@ -243,6 +253,9 @@ int main(int argc, char const *argv[]) {
                 int ackReceived;
                 recv(sock, &ackReceived, sizeof(ackReceived), 0);
 
+
+
+
                 // update the sequence number
                 currentSequenceNum = (currentSequenceNum + 1) % (sequenceNumSize + 1);
 
@@ -256,12 +269,13 @@ int main(int argc, char const *argv[]) {
 }
 
 
-void receivingAck(bool *errorArray){
-        if (!errorArray == NULL && errorArray[ackNum] ){
+void receivingAck(int *ackReceived, bool *errorArray){
+        if (!errorArray == NULL && errorArray[ackReceived] ){
                 cout << "ack number " << ackNum << " has been dropped!" << endl; 
-                errorArray[ackNum] = false;
+                errorArray[ackReceived] = false;
                 exit(1);
         }
+        
 
 
 }
