@@ -17,8 +17,8 @@
 #include <vector>
 #include <chrono>
 
-#include "HKMserver.h"
-#include "HKMcommon.h"
+#include "HKMserver.hpp"
+#include "HKMcommon.hpp"
 
 using namespace std;
 

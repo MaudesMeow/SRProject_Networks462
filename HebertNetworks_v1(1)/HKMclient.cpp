@@ -11,8 +11,8 @@
 #include <unistd.h>
 #include <poll.h>
 
-#include "HKMclient.h"
-#include "HKMcommon.h"
+#include "HKMclient.hpp"
+#include "HKMcommon.hpp"
 
 using namespace std;
 
@@ -67,10 +67,17 @@ int UserInputPromptSequence()
         return sequence;
 }
 
-time_t UserInputPromptTimeout()
+int UserInputPromptTimeout()
 {
-        time_t timeout;
+        int timeout;
         cout << "Enter the timeout value or -1 for default (Generated from pinging the server)" << endl;
+        cin >> timeout;
+        return timeout;
+}
+
+int generateTimeoutFromPing(string ip) 
+{
+
 }
 
 //creates a socket using a port number and an IP address. 
@@ -137,9 +144,9 @@ int main(int argc, char const *argv[]) {
         // initialize the crc table
         crcTableInit();
 
-        //testing means we're using default values
-        //creates socket, gets file and packet size
-        string IPaddress;
+        // TESTING means we're using default values
+
+        string IPaddress; // IP address of the server
         if (TESTING)
         {
                 IPaddress = "10.35.195.219"; // IP for Poseidon0
@@ -147,7 +154,7 @@ int main(int argc, char const *argv[]) {
                 IPaddress = UserInputPromptAddr();
         }
         
-        int portNumber;
+        int portNumber; // server port number to use
         if (TESTING)
         {
                 portNumber = PORT_NUMBER;
@@ -155,7 +162,7 @@ int main(int argc, char const *argv[]) {
                 portNumber = UserInputPromptPort();
         }
         
-        string fileName;
+        string fileName; // name of the input file
         if (TESTING)
         {
                 fileName = "HKMclient.cpp";
@@ -171,7 +178,7 @@ int main(int argc, char const *argv[]) {
                 packetSize = UserInputPromptPacket();
         }      
 
-        int windowSize;
+        int windowSize; // the size of our sliding window
         if (TESTING)
         {
                 windowSize = WINDOW_SIZE;
@@ -187,6 +194,19 @@ int main(int argc, char const *argv[]) {
                 sequenceNumSize = UserInputPromptSequence();
         }
         
+        int timeout; // time we allow to pass without receiving an ack before resending a packet
+        if (TESTING)
+        {
+                timeout = generateTimeoutFromPing(IPaddress);
+        } else {
+                timeout = UserInputPromptTimeout();
+                if (timeout < 0)
+                {
+                        timeout = generateTimeoutFromPing(IPaddress);
+                }
+        }
+
+
         // bool *errorArray = (bool*)malloc(sizeof(bool) * (*sequenceSize));
         // errorArray = UserPromptErrorChoice(sequenceNumSize, *errorArray);
 

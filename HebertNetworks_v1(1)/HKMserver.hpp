@@ -1,5 +1,5 @@
-#ifndef HKMSERVER_H
-#define HKMSERVER_H
+#ifndef HKMSERVER_HPP
+#define HKMSERVER_HPP
 
 int CreateSocketServer(int port);
 

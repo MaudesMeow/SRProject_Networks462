@@ -1,5 +1,5 @@
-#ifndef HKMCLIENT_H
-#define HKMCLIENT_H
+#ifndef HKMCLIENT_HPP
+#define HKMCLIENT_HPP
 
 #include <string>
 
@@ -9,6 +9,8 @@ int UserInputPromptWindow();
 int UserInputPromptSequence();
 int CreateSocketClient(int port, std::string ip);
 int sendKillswitch(int sock);
+int UserInputPromptTimeout();
+int generateTimeoutFromPing(std::string ip);
 
 // defining our packet struct to keep track of the timeouts for each one we send
 typedef struct Packet{

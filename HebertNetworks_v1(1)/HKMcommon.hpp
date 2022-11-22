@@ -1,5 +1,5 @@
-#ifndef HKMCOMMON_H
-#define HKMCOMMON_H
+#ifndef HKMCOMMON_HPP
+#define HKMCOMMON_HPP
 
 #include <stdio.h>
 #include <string>

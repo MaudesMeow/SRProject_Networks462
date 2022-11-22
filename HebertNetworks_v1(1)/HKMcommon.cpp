@@ -2,7 +2,7 @@
 #include <string>
 #include <iostream>
 
-#include "HKMcommon.h"
+#include "HKMcommon.hpp"
 
 //prompts te user for the port number
 int UserInputPromptPort()
