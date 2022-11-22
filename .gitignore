@@ -1,0 +1,5 @@
+bin/*
+*.zip
+bin/
+/.vscode/
+.DS_Store
