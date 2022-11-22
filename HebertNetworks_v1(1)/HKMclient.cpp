@@ -19,7 +19,7 @@ using namespace std;
 string UserInputPromptAddr()
 {
         string ip;
-        cout << "Enter IPaddress: ";
+        cout << "Enter IPaddress: " << endl;
         cin >> ip;
         return ip;	
 }
@@ -28,7 +28,7 @@ string UserInputPromptAddr()
 int UserInputPromptPacket()
 {
         int packet;
-        cout << "Enter the packet size or -1 for default (" << PACKET_SIZE << "): ";
+        cout << "Enter the packet size or -1 for default (" << PACKET_SIZE << "): " << endl;
         cin >> packet;
         if (packet < 0)
         {
@@ -42,7 +42,7 @@ int UserInputPromptPacket()
 int UserInputPromptWindow()
 {
         int window;
-        cout << "Enter the window size or -1 for default (" << WINDOW_SIZE << "): ";
+        cout << "Enter the window size or -1 for default (" << WINDOW_SIZE << "): " << endl;
         cin >> window;
         if (window < 0)
         {
@@ -56,7 +56,7 @@ int UserInputPromptWindow()
 int UserInputPromptSequence()
 {
         int sequence;
-        cout << "Enter the sequence number size or -1 for default (" << SEQUENCE_SIZE << "): ";
+        cout << "Enter the sequence number size or -1 for default (" << SEQUENCE_SIZE << "): " << endl;
         cin >> sequence;
         if (sequence < 0)
         {
@@ -64,6 +64,12 @@ int UserInputPromptSequence()
         }
         
         return sequence;
+}
+
+time_t UserInputPromptTimeout()
+{
+        time_t timeout;
+        cout << "Enter the timeout value or -1 for default (Generated from pinging the server)" << endl;
 }
 
 //creates a socket using a port number and an IP address. 
@@ -149,7 +155,7 @@ int main(int argc, char const *argv[]) {
                 sequenceNumSize = UserInputPromptSequence();
         }
         
-        bool *errorArray = (bool*)malloc(sizeof(bool) * (*sequenceSize))
+        bool *errorArray = (bool*)malloc(sizeof(bool) * (*sequenceSize));
         errorArray = UserPromptErrorChoice(sequenceNumSize, *errorArray);
 
         // socket creation failed, exit the program (sockets are represented by integers)
@@ -252,6 +258,8 @@ int main(int argc, char const *argv[]) {
 // TODO: implement this shiz.
                 int ackReceived;
                 recv(sock, &ackReceived, sizeof(ackReceived), 0);
+
+                
 
 
 
