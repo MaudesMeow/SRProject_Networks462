@@ -149,8 +149,7 @@ int main(int argc, char const *argv[]) {
                 sequenceNumSize = UserInputPromptSequence();
         }
         
-        bool *errorArray = (bool*)malloc(sizeof(bool) * (*sequenceSize))
-        errorArray = UserPromptErrorChoice(sequenceNumSize, *errorArray);
+        
 
         // socket creation failed, exit the program (sockets are represented by integers)
         int sock;
@@ -192,12 +191,7 @@ int main(int argc, char const *argv[]) {
                 char *payload; // this is what gets sent to server
                 }packet;
 
-        typedef struct window{
-        public:
-                int windowUpperbound; 
-                int windowLowerBound;
-                char *windowFrame;
-        }window;
+        
 
         // our selective repeat buffer to store the packtes in until they are acked
         packet srpBuffer[sequenceNumSize + 1];
@@ -269,107 +263,75 @@ int main(int argc, char const *argv[]) {
 }
 
 
-void receivingAck(int *ackReceived, bool *errorArray){
+void receivingAck(int &ackReceived, bool *errorArray){
         if (!errorArray == NULL && errorArray[ackReceived] ){
-                cout << "ack number " << ackNum << " has been dropped!" << endl; 
+                cout << "ack number " << ackReceived << " has been dropped!" << endl; 
                 errorArray[ackReceived] = false;
                 exit(1);
-        }
+        } 
         
 
 
 }
 
-bool* RandomlyGeneratedErrors(int sequenceSize){
-        //allocate memory for new bool array length of sequence
-        bool *errors = new bool[sequenceSize](); 
-        //provides a new ~seed~ to return a different random value
-        srand(time(NULL));
-
-        for(int ii =0; ii < sequenceSize; ii++){
-                //calling a random value between 1-100 and if the value returned is less than 10, an error will be put into that index number
-                if ((rand() % 100 + 1 ) <= 10) {
-                        errors[ii] = true;
-                }
-
-
-
-        }
-        //returns our modified array with errors, from here we can see if the ack or packet being sent is at the same index as an error within the errors array. 
-        return errors; 
-
-}
-
-
-bool* UserInputErrors(int sequenceSize) {
-
-
-
-
-
-        string userInput;
-        
-        string inputIndexValue;;
-        //allocating memory for bool array 
-        bool *errors = new bool[sequenceSize](); 
-        cout << "At what values should an error occur? (type in values seperated with one space)";
-        //using getline method to store user input into string userInput
-        getline(cin, userInput);
-        //string stream in, able to seperate user input by space
-        stringstream ssin(userInput);
-        
-        //while there are still numbers add each to correct place in errors array
-        while (ssin >> inputIndexValue){
-                
-                // stoi == string object integer (I think), converts string to integer value
-                errors[stoi(inputIndexValue)] = true;
-
-
-        }
-
-        return errors;
-
-}
-
-
-bool UserPromptErrorChoice(int* sequenceSize, bool** errorArray){
-
-        
+int * UserPromptErrorChoice(){
         string userInput = "";
-
+        int errorArray[] = {};
         cout << "How would you like to generate errors?" << endl;
-        cout << "Default: none (hit enter). " << endl;
-        cout << "Randomly generated (press 1)." << endl;
-        cout << "User generated (press 2)." << endl;
+        cout << "Default: Randomly Generated. (Press Enter) " << endl;
+        cout << "User Input (press 1)." << endl;
+        cout << "None (press 2)." << endl;
 
         
-        getline(cin, userInput);
+        cin >> userInput;
         
         if (userInput.empty()) {
-                userInput = -1; 
+                userInput = "-1"; 
         }
 
         if (!userInput.empty()) {
-                while (*errorArray == NULL) {
-                        if (userInput.compare("-1") == 0){
-                                *errorArray = (bool*)malloc(sizeof(bool) * (*sequenceSize)); 
-                                for(int i = 0; i < *sequenceSize; i++){
-                                        (*errorArray)[i] = false;
-                                }
-                        } else if(userInput.compare("1") == 0){
-                                *errorArray = RandomlyGeneratedErrors(*sequenceSize);
-                        } else if(userInput.compare("2") == 0){
-                                *errorArray = UserInputErrors(*sequenceSize);
-                        } else{
-                                cout << "Invalid input. Try again." << endl;
-                                getline(cin, userInput);
-                                }
+                
+                if (userInput == "-1"){
+                        int sizeOfRandomErrorArray = 1000;
+                        int *errorArray = new int[sizeOfRandomErrorArray]();
 
-
+                        for (int ii = 0; ii < errorArray.size(); ii++) {
+                                if ((rand() % 100 + 1 ) <= 10) {
+                                        errorArray[ii];
+                                }
                         }
+                        return errorArray;
+                } else if(userInput == "1"){
+                        string userInput;
+                        string inputIndexValue;;
+                        int sizeOfUserErrorArray;
+                        cout << "How many values would you like to put in?" << endl;
+                        cin >> sizeOfUserErrorArray;
+                        cout << "enter the values (in order) for which packets you would like to cause an error" << endl;
+                        getline(cin, userInput);
 
+                        int *errorArray = new int[sizeOfUserErrorArray]();
+                        
+                        
+                         //string stream in, able to seperate user input by space
+                        stringstream ssin(userInput);
+        
+                        //while there are still numbers add each to correct place in errors array
+                         while (ssin >> inputIndexValue){
+                
+                        // stoi == string object integer (I think), converts string to integer value
+                                errorArray[stoi(inputIndexValue)];
+                         }
+
+                        return errorArray;
+
+                } else if(userInput == "2") {
+                        int *errorArray = new int[1]();
+                        return errorArray;
                 }
-                return errorArray;
 
-
+                return NULL;
+        
+        }     
+        
 }
