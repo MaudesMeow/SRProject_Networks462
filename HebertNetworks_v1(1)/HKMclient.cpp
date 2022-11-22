@@ -237,7 +237,8 @@ int main(int argc, char const *argv[]) {
         int *packetsToLose;
         int lostPacketCount;
 
-        switch (UserInputPromptErrorGenerationMethod("packet lost")){
+        switch (UserInputPromptErrorGenerationMethod("packet lost"))
+        {
                 case 0: // no generated errors
                         lostPacketCount = 0;
                         break;
@@ -268,9 +269,11 @@ int main(int argc, char const *argv[]) {
         case 1: // randomly generated errors
                 corruptPacketCount = randomGeneratedErrorCount();
                 packetsToCorrupt = randomGeneratedErrorArray(corruptPacketCount);
+                break;
         case 2: // user generated errors
                 corruptPacketCount = UserInputPromptErrorCount("packets to corrupt");
-                packetsToCorrupt = UserInputPromptGenerateErrorArray(corruptPacketCount, "packets to corrupt");        
+                packetsToCorrupt = UserInputPromptGenerateErrorArray(corruptPacketCount, "packets to corrupt");
+                break;
         default: // something went wrong
                 return -1;
         }
