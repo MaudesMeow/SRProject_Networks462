@@ -1,5 +1,3 @@
-
-
 #include <stdio.h>
 #include <string>
 #include <iostream>
@@ -70,10 +68,6 @@ crc crcFun(char *message, int nBytes) {
         data = message[byte] ^ (remainder >> (CRCBITS - 8));
         remainder = crcTable[data] ^ (remainder << 8);
     }
-
-// the remainder is the crc
-    return remainder;
-} /* crcFun() */
 
 // the remainder is the crc
     return remainder;

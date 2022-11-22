@@ -16,7 +16,6 @@ runserver:
 	./bin/HKMserver.out
 
 # use 'make clean' to remove executable files
-# use 'make clean' to remove executable files
 clean:
 	if [ -f bin/HKMserver.out ]; then rm bin/HKMserver.out; fi
 	if [ -f bin/HKMclient.out ]; then rm bin/HKMclient.out; fi

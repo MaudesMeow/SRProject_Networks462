@@ -269,7 +269,7 @@ int main(int argc, char const *argv[]) {
 }
 
 
-void receivingAck(int *ackReceived, bool *errorArray){
+void receivingAck(int ackReceived, bool *errorArray){
         if (!errorArray == NULL && errorArray[ackReceived] ){
                 cout << "ack number " << ackNum << " has been dropped!" << endl; 
                 errorArray[ackReceived] = false;
