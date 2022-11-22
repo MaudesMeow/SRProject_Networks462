@@ -234,6 +234,27 @@ int main(int argc, char const *argv[]) {
         } else {
                 sequenceNumSize = UserInputPromptSequence();
         }
+
+        int *acksToLose;
+        int ackCount;
+
+        switch (UserInputPromptError("ack...ahh")){
+                case 0:
+                        ackCount = 0;
+                        acksToLose = new int[0]();
+                        break;
+                case 1:
+                        ackCount = RandomlyGenerateAckCount();
+                        acksToLose = RandomGeneratedAcksToLose(ackCount);
+                        break;
+                case 2: 
+                        ackCount = NumberOfAcksToLose();
+                        acksToLose = UserInputPromptsAcksToLose(ackCount);
+                        break;
+                default:
+                        return -1; 
+        
+        }
         
         chrono::nanoseconds timeout; // time we allow to pass without receiving an ack before resending a packet
         int userTimeout;
@@ -406,108 +427,73 @@ int main(int argc, char const *argv[]) {
 }
 /*
 
-void receivingAck(int ackReceived, bool *errorArray){
-        if (!errorArray == NULL && errorArray[ackReceived] ){
-                cout << "ack number " << ackNum << " has been dropped!" << endl; 
-                errorArray[ackReceived] = false;
-                exit(1);
-        }
-        
-
-
-}
-
-bool* RandomlyGeneratedErrors(int sequenceSize){
-        //allocate memory for new bool array length of sequence
-        bool *errors = new bool[sequenceSize](); 
-        //provides a new ~seed~ to return a different random value
-        srand(time(NULL));
-
-        for(int ii =0; ii < sequenceSize; ii++){
-                //calling a random value between 1-100 and if the value returned is less than 10, an error will be put into that index number
-                if ((rand() % 100 + 1 ) <= 10) {
-                        errors[ii] = true;
-                }
 
 
 
-        }
-        //returns our modified array with errors, from here we can see if the ack or packet being sent is at the same index as an error within the errors array. 
-        return errors; 
+int UserInputPromptError(string errorType){
 
-}
-
-
-bool* UserInputErrors(int sequenceSize) {
-
-
-
-
-
-        string userInput;
-        
-        string inputIndexValue;;
-        //allocating memory for bool array 
-        bool *errors = new bool[sequenceSize](); 
-        cout << "At what values should an error occur? (type in values seperated with one space)";
-        //using getline method to store user input into string userInput
-        getline(cin, userInput);
-        //string stream in, able to seperate user input by space
-        stringstream ssin(userInput);
-        
-        //while there are still numbers add each to correct place in errors array
-        while (ssin >> inputIndexValue){
-                
-                // stoi == string object integer (I think), converts string to integer value
-                errors[stoi(inputIndexValue)] = true;
-
-
-        }
-
-        return errors;
-
-}
-
-
-bool UserPromptErrorChoice(int* sequenceSize, bool** errorArray){
-
-        
-        string userInput = "";
-
+        int userInput;
         cout << "How would you like to generate errors?" << endl;
-        cout << "Default: none (hit enter). " << endl;
-        cout << "Randomly generated (press 1)." << endl;
-        cout << "User generated (press 2)." << endl;
+        cout << "Randomly Generated. (press 1) " << endl;
+        cout << "User Input (press 2)." << endl;
+        cout << "None (Enter any other value)." << endl;
+        cin >> userInput;
 
-        
-        getline(cin, userInput);
-        
-        if (userInput.empty()) {
-                userInput = -1; 
+        switch(userInput){
+        case 1 : 
+                return 1;
+        case 2: 
+                return 2;
+        default: 
+                return 0;
+
         }
 
-        if (!userInput.empty()) {
-                while (*errorArray == NULL) {
-                        if (userInput.compare("-1") == 0){
-                                *errorArray = (bool*)malloc(sizeof(bool) * (*sequenceSize)); 
-                                for(int i = 0; i < *sequenceSize; i++){
-                                        (*errorArray)[i] = false;
-                                }
-                        } else if(userInput.compare("1") == 0){
-                                *errorArray = RandomlyGeneratedErrors(*sequenceSize);
-                        } else if(userInput.compare("2") == 0){
-                                *errorArray = UserInputErrors(*sequenceSize);
-                        } else{
-                                cout << "Invalid input. Try again." << endl;
-                                getline(cin, userInput);
-                                }
+
+}
 
 
-                        }
+int NumberOfAcksToLose(){
 
-                }
-                return errorArray;
+        int ackCount;
+        cout << "How many acks would you like to lose" << endl;
+
+        cin >> ackCount;
+
+        return ackCount;
+}
 
 
+int *UserInputPromptsAcksToLose(int ackCount) {
+
+        int *acksToLose = new int [ackCount]();
+
+        cout << "Enter those packet numbers please!" << endl;
+        for (int i = 0; i < ackCount; i ++) {
+                cin >> acksToLose[i];
+
+        }
+
+        return acksToLose;
+}
+
+
+int RandomlyGenerateAckCount(){
+        srand(time(NULL));
+        int ackCount = rand() %200 + 5;
+
+
+}
+
+
+int *RandomGeneratedAcksToLose(int ackCount){
+        int *acksToLose = new int[ackCount]();
+        srand(time(NULL));
+        for (int i = 0; i < ackCount; i++) {
+                acksToLose[i] % 2000000;
+        }
+        return acksToLose;
 }
 */
+
+
