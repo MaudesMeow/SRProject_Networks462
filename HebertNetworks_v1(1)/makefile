@@ -12,8 +12,10 @@ client:
 runclient:
 	./bin/HKMclient.out
 runserver:
+	if [ -f output.txt ]; then rm output.txt; fi
 	./bin/HKMserver.out
 
+# use 'make clean' to remove executable files
 # use 'make clean' to remove executable files
 clean:
 	if [ -f bin/HKMserver.out ]; then rm bin/HKMserver.out; fi
@@ -26,7 +28,7 @@ archive:
 
 # create a zip file, then send it to poseidon server
 olivertoposeidon: archive
-	scp HKMSRP.zip mahano0661@poseidon1.cs.uwec.edu:/USERS/ALL/mahano0661/CS462
+	scp HKMSRP.zip mahano0661@poseidon1.cs.uwec.edu:/USERS/ALL/mahano0661/newCS462
 
 jordantoposeidon: archive
 	scp HKMSRP.zip hebertj4194@poseidon0.cs.uwec.edu:/USERS/ALL/HEBERTJ4194/CS462Test
