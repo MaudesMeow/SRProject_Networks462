@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string>
 #include <iostream>
-#include "HKMcommon.h"
 
+#include "HKMcommon.h"
 
 //prompts te user for the port number
 int UserInputPromptPort()
@@ -26,8 +26,78 @@ std::string UserInputPromptFile(std::string prompt)
         return file;
 }
 
+/* prompt user for how they want to generate the 'errorType' errors 
+   returns 1 for randomly generated, 2 for user generated, and 0 for no errors
+*/
+int UserInputPromptErrorGenerationMethod(std::string errorType)
+{
+        int errorCode;
+        std::cout << "How would you like to generate the" << errorType << " errors?" << std::endl;
+        std::cout << "Randomly generated (Enter 1)." << std::endl;
+        std::cout << "User generated (Enter 2)." << std::endl;
+        std::cout << "Default: none (Enter any other value). " << std::endl;
+
+        std::cin >> errorCode;
+
+        switch (errorCode)
+        {
+        case 1:
+                return 1;
+
+        case 2: 
+                return 2;
+        
+        default:
+                return 0;
+        }
+}
+
+/* prompt user for the number of errors to generate */
+int UserInputPromptErrorCount(std::string errorType)
+{
+        int count;
+        std::cout << "Enter the number of " << errorType << ": " << std::endl;
+        std::cin >> count;
+        return count;
+}
+
+/* prompt user for count numbers, and return them in an array */
+int *UserInputPromptGenerateErrorArray(int count, std::string errorType)
+{
+        int *packNumsWithErrors = new int[count]();
+        std::cout << "Enter the packet numbers for which " << errorType << ": " << std::endl;
+        for (int i = 0; i < count; i++)
+        {
+                std::cin >> packNumsWithErrors[i];
+        }
+
+        return packNumsWithErrors;
+        
+}
+
+/* generate random number between 5 and 200: */
+int randomGeneratedErrorCount() 
+{
+        srand (time(NULL));
+        int count = rand() % 200 + 5;
+}
+
+/* generate count random numbers between 0 and 2 million, and return them in an array */
+int *randomGeneratedErrorArray(int count)
+{
+        int *packNumsWithErrors = new int[count]();
+        srand(time(NULL)); // seeding rand()
+
+        for (int i = 0; i < count; i++)
+        {
+                packNumsWithErrors[i] = rand() % 2000000; // mod 2 million
+        }
+        return packNumsWithErrors;
+}
+
 // need to declare this for use in the following functions.
 crc crcTable[256];
+
 
 /* crcTableInit() creates the crc lookup table.
  * Only needs to be run once.
@@ -37,7 +107,7 @@ void crcTableInit() {
     int dividend;
     unsigned char bit;
 
-// calculate the remainder of all possible dividends
+    // calculate the remainder of all possible dividends
     for (dividend = 0; dividend < 256; ++dividend) {
 
         // start with dividend followed by zeroes
@@ -69,6 +139,6 @@ crc crcFun(char *message, int nBytes) {
         remainder = crcTable[data] ^ (remainder << 8);
     }
 
-// the remainder is the crc
+    // the remainder is the crc
     return remainder;
 } /* crcFun() */

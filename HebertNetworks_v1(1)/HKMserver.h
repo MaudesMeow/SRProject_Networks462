@@ -1,10 +1,12 @@
 #ifndef HKMSERVER_H
 #define HKMSERVER_H
 
-
-// int UserInputPromptPort();
-// void UserInputPromptFile();
 int CreateSocketServer(int port);
 
+typedef struct Packet {
+        bool isFull;
+        char *message;
+        int lengthOfPacket;
+}packet;
 
 #endif

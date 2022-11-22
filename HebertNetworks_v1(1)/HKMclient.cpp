@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <poll.h>
+
 #include "HKMclient.h"
 #include "HKMcommon.h"
 
@@ -100,6 +101,36 @@ int CreateSocketClient(int port, string ip)
 	return sock;
 }
 
+int sendKillswitch(int sock) 
+{
+        // this tells the server we are done
+        packet killswitch;
+        char *message = "byeeeee";
+        killswitch.payload = new char[7 + BYTES_OF_PADDING]();
+        // putting the sequence number at the front of the packet
+        killswitch.payload[0] = (char) ((-1 & 0xFF000000) >> 24); 
+        killswitch.payload[1] = (char) ((-1 & 0x00FF0000) >> 16);
+        killswitch.payload[2] = (char) ((-1 & 0x0000FF00) >> 8);
+        killswitch.payload[3] = (char)  (-1 & 0x000000FF);
+
+        killswitch.payload[sizeof(int)] = 'b';
+        killswitch.payload[sizeof(int) + 1] = 'y';
+
+        for (int i = 2; i < 5; i++)
+        {
+                killswitch.payload[i + sizeof(int)] = 'e';
+        }
+
+        crc newcrc = crcFun(&killswitch.payload[0], 7 + sizeof(int));
+        killswitch.payload[7 + sizeof(int)]     = (char) ((newcrc & 0xFF000000) >> 24);
+        killswitch.payload[7 + sizeof(int) + 1] = (char) ((newcrc & 0x00FF0000) >> 16);
+        killswitch.payload[7 + sizeof(int) + 2] = (char) ((newcrc & 0x0000FF00) >> 8);
+        killswitch.payload[7 + sizeof(int) + 3] = (char)  (newcrc & 0x000000FF);
+
+       
+        
+        send(sock, &killswitch.payload, 15, 0);
+}
 
 int main(int argc, char const *argv[]) {
 
@@ -155,8 +186,8 @@ int main(int argc, char const *argv[]) {
                 sequenceNumSize = UserInputPromptSequence();
         }
         
-        bool *errorArray = (bool*)malloc(sizeof(bool) * (*sequenceSize));
-        errorArray = UserPromptErrorChoice(sequenceNumSize, *errorArray);
+        // bool *errorArray = (bool*)malloc(sizeof(bool) * (*sequenceSize));
+        // errorArray = UserPromptErrorChoice(sequenceNumSize, *errorArray);
 
         // socket creation failed, exit the program (sockets are represented by integers)
         int sock;
@@ -190,21 +221,7 @@ int main(int argc, char const *argv[]) {
         string fileInput =""; // this is what we send to the server
         int currentSequenceNum = 0; // the sequence number of the packet we are reading from the file. Always needs to be in the window. Might be the same as window upper bound?
 
-        // defining our packet struct to keep track of the timeouts for each one we send
-        typedef struct Packet{
-        public:
-                int sequenceNum; // for reference, might not be needed. should be equal to the index of the srpBuffer array
-                uint64_t timeLastSent; // used in timeout for each packet we send
-                char *payload; // this is what gets sent to server
-                }packet;
-
-        typedef struct window{
-        public:
-                int windowUpperbound; 
-                int windowLowerBound;
-                char *windowFrame;
-        }window;
-
+        
         // our selective repeat buffer to store the packtes in until they are acked
         packet srpBuffer[sequenceNumSize + 1];
 
@@ -269,13 +286,15 @@ int main(int argc, char const *argv[]) {
 
         }
 
+        sendKillswitch(sock);
+
         //we're done sending packets. finish everything up.
         cout << "Packets sent. Complete"<< endl;
         string verify = "md5sum " + fileName;
         system(verify.c_str());
                 
 }
-
+/*
 
 void receivingAck(int ackReceived, bool *errorArray){
         if (!errorArray == NULL && errorArray[ackReceived] ){
@@ -381,3 +400,4 @@ bool UserPromptErrorChoice(int* sequenceSize, bool** errorArray){
 
 
 }
+*/

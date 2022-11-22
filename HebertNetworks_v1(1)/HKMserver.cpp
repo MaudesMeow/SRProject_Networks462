@@ -12,27 +12,15 @@
 #include <netinet/in.h>
 #include <string>
 #include <poll.h>
-#include "HKMserver.h"
-#include "HKMcommon.h"
-
+#include <algorithm>
 #include <sys/ioctl.h>
 #include <vector>
 #include <chrono>
 
+#include "HKMserver.h"
+#include "HKMcommon.h"
+
 using namespace std;
-
-using Clock = std::chrono::steady_clock;
-using std::chrono::time_point;
-using std::chrono::duration_cast;
-using std::chrono::milliseconds;
-using std::this_thread::sleep_for;
-
-typedef struct Packet {
-        bool isFull;
-        char *message;
-        int lengthOfPacket;
-}packet;
-
 
 // creates a listening socket for the client to connect to. 
 // returns the file descriptor for the socket if successfull, -1 if failure
@@ -95,16 +83,36 @@ int main(int argc, char const *argv[]) {
                 fileName = UserInputPromptFile("Enter the name of the file to which you would like to output: ");
         }
 
+        int *acksToLose; // packet numbers of the acks we are losing
+        int ackCount; // number of acks to lose
+
+
+        switch (UserInputPromptErrorGenerationMethod("ack lost"))
+        {
+        case 0: // no generated errors
+                ackCount = 0;
+                acksToLose = new int[0]();
+                break;
+        
+        case 1: // randomly generated errors
+                ackCount = randomGeneratedErrorCount();
+                acksToLose = randomGeneratedErrorArray(ackCount);
+                break;
+
+        case 2: // user generated errors
+                ackCount = UserInputPromptErrorCount("acks to lose");
+                acksToLose = UserInputPromptGenerateErrorArray(ackCount, "acks to lose");
+                break;
+        default: // try again, sucka
+                return -1;
+        }
+
+        sort(acksToLose, acksToLose+ackCount); // our acks to lose array is sorted.
+                
 
 	int sock = CreateSocketServer(portNumber);
 
-        // //start is the starting point of the clock as it is before starting communication
-        // time_point<Clock> start = Clock::now();
-        // //end is the point of the clock as it is every moment. Communication ends once enough
-        // //time has passed.
-        // time_point<Clock> end = Clock::now();
-        // auto diff = duration_cast<milliseconds>(end-start);
-            
+        
         int *headerRecv = new int[3]();
 
         // client sends information on bufferSize, windowSize, and sequencNumSize
@@ -125,18 +133,18 @@ int main(int argc, char const *argv[]) {
         int windowLowerBound = 0;        //sequence number used by selective repeat algorithm (basically the left side of our window)
         int windowUpperBound = windowSize;
 
-        int checkStatus;
-
-        // TODO: We need to put a loop here to keep reading. Not sure this diff one is the best way to go about it?
-        while (true)
-        {
+        bool weAreDone = false;
         
-        // //while the difference between the start time and the end time is < 10,000 milliseconds
-        // while(diff.count() < 10000) {
-                // diff = duration_cast<milliseconds>(end-start);
-                // end = Clock::now();
-                checkStatus = 0;
-                // 
+        // the index of the next ack we need to not send. makes checking easier.
+        int indexOfNextAckToLose = 0;
+        
+        //creates selectiverepeatbuffer
+        packet *selectiveRepeatBuffer;
+        selectiveRepeatBuffer = new packet[sequenceNumSize + 1](); // want largest index to be sequenceNumSize
+
+        while (!weAreDone)
+        {
+                int checkStatus = 0;
 
                 ioctl(sock, FIONREAD, &checkStatus); //used to check if the socket is working.
                 //if the socket is good,
@@ -148,26 +156,18 @@ int main(int argc, char const *argv[]) {
                         if(n > 0) {
                                 char buffer[bufferSize];
                                 int pktlen = recv(sock, buffer, sizeof(buffer), 0);
-                        cout << "\n\npktlen: " << pktlen << endl;
-                                //creates selectiverepeatbuffer
-                                packet *selectiveRepeatBuffer;
-                                selectiveRepeatBuffer = new packet[sequenceNumSize + 1](); // want largest index to be sequenceNumSize
-                        
-                                //auto[sequenceNumSize][packetSize] selectiveRepeatBuffer;
-                                //auto[packetSize] packet; 
-                                
+                                cout << "\n\npktlen: " << pktlen << endl;
+
+
                                 //this is the packet that we're going to pull from the buffer.
                                 packet newPacket;
                                 newPacket.message = new char[pktlen]();
                                 newPacket.isFull = true;
                                 newPacket.lengthOfPacket = pktlen;
 
-
                                 //creates a packet by pulling characters from buffer array up to the packetsize
                                 for(int i = 0; i < pktlen; i++){
-
                                         newPacket.message[i] = buffer[i];
-
                                 }
                                 
                                 bool passedChecksum = false;
@@ -176,16 +176,15 @@ int main(int argc, char const *argv[]) {
                                                      ((((unsigned int) newPacket.message[pktlen-3]) << 16) & 0x00FF0000) |
                                                      ((((unsigned int) newPacket.message[pktlen-2]) << 8)  & 0x0000FF00) |
                                                       (((unsigned int) newPacket.message[pktlen-1])        & 0x000000FF));
-                cout << "crcFromClient: " << crcFromClient << endl;
+                                cout << "crcFromClient: " << crcFromClient << endl;
                                 
                                 crc crcCalculated = crcFun(&newPacket.message[0], pktlen - sizeof(crc)); // don't include the crc at the end of the packet when we are calculating it.
-                cout << "crcCalculated: " << crcCalculated << endl;
+                                cout << "crcCalculated: " << crcCalculated << endl;
                                 
                                 if (crcFromClient == crcCalculated)
                                 {
                                         passedChecksum = true;
                                 }
-                                
 
                                 if(passedChecksum){
 
@@ -195,19 +194,43 @@ int main(int argc, char const *argv[]) {
                                                                     ((((unsigned int) newPacket.message[1]) << 16) & 0x00FF0000) |
                                                                     ((((unsigned int) newPacket.message[2]) << 8)  & 0x0000FF00) |
                                                                      (((unsigned int) newPacket.message[3])        & 0x000000FF));
-                cout << "packetSequenceNumber: " << packetSequenceNumber << endl;
-                cout << "lower bound: " << windowLowerBound << endl;         
+                                        
+                                        // the client will send a sequence number of -1 with dummy message when it is done reading in from the file.
+                                        if (packetSequenceNumber == -1)
+                                        {
+                                                weAreDone = true;
+                                                continue; 
+                                        }
+                                        
+                                        
                                         //above windowUpperBound or below windowLowerBound
                                         if((windowLowerBound < windowUpperBound) && (packetSequenceNumber > windowUpperBound || packetSequenceNumber < windowLowerBound)){
-cout << "outside of normal window" << endl;
-                                                //send an ack to the client indicating that we have recieved the packet.
-                                                send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
+                                                
+                                                if ((ackCount != 0) && (packetSequenceNumber == acksToLose[indexOfNextAckToLose]))
+                                                {
+                                                        indexOfNextAckToLose++;
+                                                        if (indexOfNextAckToLose == ackCount) // it's the last ack to lose
+                                                        {
+                                                                ackCount = 0; // this ensures we won't drop any more acks (on purpose)
+                                                        }                                                        
+                                                } else {
+                                                        //send an ack to the client indicating that we have recieved the packet.
+                                                        send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
+                                                }
 
                                         }//between windowupperbound and windowLowerBound
                                         else if(packetSequenceNumber > windowUpperBound && packetSequenceNumber < windowLowerBound){
-cout << "outside of inverted window" << endl;
-                                                //send an ack to the client indicating that we have recieved the packet.
-                                                send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
+                                                if ((ackCount != 0) && (packetSequenceNumber == acksToLose[indexOfNextAckToLose]))
+                                                {
+                                                        indexOfNextAckToLose++;
+                                                        if (indexOfNextAckToLose == ackCount) // it's the last ack to lose
+                                                        {
+                                                                ackCount = 0; // this ensures we won't drop any more acks (on purpose)
+                                                        }                                                        
+                                                } else {
+                                                        //send an ack to the client indicating that we have recieved the packet.
+                                                        send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
+                                                }
                                         }
                                         else{
 
@@ -215,21 +238,21 @@ cout << "outside of inverted window" << endl;
                                                 //prints to console which packet was recieved.
                                                 cout << "Packet " << numOfPackets << " received: " << endl;
 
-                                                //send an ack to the client indicating that we have recieved the packet.
-                                                send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
+                                                // we need to not send this ack because it matches the next one in our array
+                                                if ((ackCount != 0) && (packetSequenceNumber == acksToLose[indexOfNextAckToLose])) 
+                                                {
+                                                        indexOfNextAckToLose++;
+                                                        if (indexOfNextAckToLose == ackCount) // it's the last ack to lose
+                                                        {
+                                                                ackCount = 0; // this ensures we won't drop any more acks (on purpose)
+                                                        }                                                        
+                                                } else {
+                                                        //send an ack to the client indicating that we have recieved the packet.
+                                                        send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
+                                                }
 
-        cout << "after sending ack" << endl;
                                                 selectiveRepeatBuffer[packetSequenceNumber] = newPacket;
-        cout << "after putting the new packet in the array" << endl;                                    
                                             
-                                                // //deep copy the packet onto the selectiveRepeatBuffer
-                                                // for(int j = 0; j < packetSize; j++){
-
-                                                //         // skip the sequence number when copying it in, and don't include the crc at the end
-                                                //         selectiveRepeatBuffer[packetSequenceNumber].message = packet[j + sizeof(packetSequenceNumber) - 1];
-
-                                                // }
-
                                                 //write packets to our output file
                                                 while(selectiveRepeatBuffer[windowLowerBound].isFull){
                                                         //
@@ -237,44 +260,30 @@ cout << "outside of inverted window" << endl;
                                                         for(int j = sizeof(packetSequenceNumber); j < (selectiveRepeatBuffer[windowLowerBound].lengthOfPacket - (int) sizeof(crc)); j++){
                                                                 outFile << selectiveRepeatBuffer[windowLowerBound].message[j] << flush;
                                                         }
+                                                        
                                                         //remove current packet from selectiveRepeatBuffer
                                                         selectiveRepeatBuffer[windowLowerBound].isFull = false;
+                                                        
                                                         //move the sliding window after effectively writing to the output file
                                                         windowLowerBound = (windowLowerBound+1) % (sequenceNumSize+1);
                                                         windowUpperBound = (windowUpperBound+1) % (sequenceNumSize+1);
                                                 }
-                                               // start = Clock::now();
 
-                                        }
+                                        } // checking if in window
 
-                                }
+                                } // passed checksum
 
-                                /*
-                                //writes all packets
-                                if(received.length() != 0){
-                                        //write to the outfile
-                                        outFile << received;
-                                        //reset the start time so that the server won't timeout.
-                                        start = Clock::now();
-                                }
+                        } // if n > 0
 
-                                */
+                } // checkstatus (ioctl confirmed)
 
-                                //  //delete memory I allocated
-                                // for(int i = 0; i < sequenceNumSize; i++){
+       } // while loop
 
-                                //         delete[] selectiveRepeatBuffer[i];
+        delete[] selectiveRepeatBuffer;
 
-                                // }
-                                // delete[] selectiveRepeatBuffer;
-
-                                // delete[] packet;
-
-                        }
-                }
-       }
         string check = "md5sum " + fileName;
         outFile.close();
         std::system(check.c_str());
-}
+
+} // main()
 

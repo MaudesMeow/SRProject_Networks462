@@ -8,7 +8,6 @@
 #define WINDOW_SIZE 16      // Default window size
 #define PACKET_SIZE 1024    // Default packet size
 #define SEQUENCE_SIZE 64    // Default sequence number size
-#define USE_POLL false      // for testing
 #define TESTING true        // makes prompts easier for us
 #define HEADER_SIZE sizeof(int)*3   // for use in sending and receiving
 #define BYTES_OF_PADDING 8  // 4 for the sequence number and 4 for the crc (both ints)
@@ -31,6 +30,10 @@ crc crcFun(char *message, int nBytes);
 
 int UserInputPromptPort();
 std::string UserInputPromptFile(std::string prompt);
-
+int UserInputPromptErrorGenerationMethod(std::string errorType);
+int UserInputPromptErrorCount(std::string errorType);
+int *UserInputPromptGenerateErrorArray(int count, std::string errorType);
+int randomGeneratedErrorCount();
+int *randomGeneratedErrorArray(int count);
 
 #endif
