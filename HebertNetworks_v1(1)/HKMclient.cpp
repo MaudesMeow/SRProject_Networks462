@@ -379,7 +379,7 @@ int main(int argc, char const *argv[]) {
         int successfulBytesSent = 0;
         chrono::high_resolution_clock::time_point startTime = chrono::high_resolution_clock::now();
         while(!readStream.eof()){
-                if((!((windowLowerBound < windowUpperBound) && (currentSequenceNum > windowUpperBound || currentSequenceNum < windowLowerBound))
+                if((((windowLowerBound < windowUpperBound) && (currentSequenceNum < windowUpperBound && currentSequenceNum > windowLowerBound))
                 || (currentSequenceNum > windowUpperBound && currentSequenceNum < windowLowerBound))){
 
                         globalPacketNumber ++;
