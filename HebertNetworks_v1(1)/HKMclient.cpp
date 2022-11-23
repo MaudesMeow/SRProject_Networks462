@@ -330,6 +330,7 @@ int main(int argc, char const *argv[]) {
                 return -1;
         }
         
+        cout << "connecting to server..." << endl;
 
         // bool *errorArray = (bool*)malloc(sizeof(bool) * (*sequenceSize));
         // errorArray = UserPromptErrorChoice(sequenceNumSize, *errorArray);
@@ -339,6 +340,8 @@ int main(int argc, char const *argv[]) {
         if ((sock = CreateSocketClient(portNumber, IPaddress)) < 0) {
                 return -1;
         }
+
+        cout << "connection established..." << endl;
 
 // send the packet size, window size and sequence number size to the server so they know what to use
         int *header = new int[3]();
@@ -379,10 +382,12 @@ int main(int argc, char const *argv[]) {
         int successfulBytesSent = 0;
         chrono::high_resolution_clock::time_point startTime = chrono::high_resolution_clock::now();
         while(!readStream.eof()){
-                if((((windowLowerBound < windowUpperBound) && (currentSequenceNum < windowUpperBound && currentSequenceNum > windowLowerBound))
-                || (currentSequenceNum > windowUpperBound && currentSequenceNum < windowLowerBound))){
+                if(((windowLowerBound < windowUpperBound) && (currentSequenceNum <= windowUpperBound && currentSequenceNum >= windowLowerBound))
+                || ((windowLowerBound > windowUpperBound) && ((currentSequenceNum <= windowUpperBound) || (currentSequenceNum >= windowLowerBound)))){
+                        cout << "current sequence number: " << currentSequenceNum << endl;
 
-                        globalPacketNumber ++;
+                        cout << "in the if" << endl;
+                        globalPacketNumber++;
                         // create the next packet and add it to the sr buffer at the correct index
                         packet nextPacket;
 
@@ -445,7 +450,7 @@ int main(int argc, char const *argv[]) {
                                 char temp = tempPacket.payload[0];
                                 cout << "temp before change: " << temp << endl;
                                 tempPacket.payload[0] = ++temp; // makes sure this value gets changed
-                                cout << "temp after change: " << temp endl;
+                                cout << "temp after change: " << temp << endl;
                                 indexOfNextPacketToCorrupt++;
 
                                 if (indexOfNextPacketToCorrupt == corruptPacketCount)
@@ -456,7 +461,7 @@ int main(int argc, char const *argv[]) {
                                 //if payload is bigger than just the sequence number and crc, we have a packet to send.
                                 //send the packet and its size to the server, and tell the user we did it.
                                 if(bufsize > BYTES_OF_PADDING){
-\                                       send(sock, &bufsize, sizeof(bufsize), 0);
+                                        send(sock, &bufsize, sizeof(bufsize), 0);
                                         send(sock, tempPacket.payload, bufsize, 0); //sends the corrupted packet, but does timeout for the normal one.
                                         nextPacket.timeoutTime = chrono::high_resolution_clock::now() + timeout;
                                         cout << "packet " << nextPacket.sequenceNum << " sent" << endl;
@@ -543,7 +548,7 @@ int main(int argc, char const *argv[]) {
                 while((index != windowUpperBound) && (index < globalPacketNumber)){
                         //if we timed out, resend packet from srpBuffer
                         if((srpBuffer[index].timeoutTime < timeNow) && !srpBuffer[index].isAcked && srpBuffer[index].isFull){
-                                cout << "packet " << srpBuffer[index].globalPacketNumber-1 << " timed out." << endl;
+                                cout << "packet " << srpBuffer[index].sequenceNum << " timed out." << endl;
                                 //cout << "packet " << index << " timed out." << endl;
                                 
                                 int resendBufsize = srpBuffer[index].packetBufSize;
@@ -597,7 +602,7 @@ int main(int argc, char const *argv[]) {
         cout << "number of retransmitted packets: " << numResentPackets << endl;
         cout << "total elapsed time: " << timeDiffSeconds << " seconds." << endl;
         cout << "total throughput (Mbps): " << attemptedMbSent/timeDiffSeconds << endl;
-        cout << "effective throughput: " << successfulMbSent/timeDiffSeconds << endl;
+        cout << "effective throughput (Mbps): " << successfulMbSent/timeDiffSeconds << endl;
 
         string verify = "md5sum " + fileName;
         system(verify.c_str());
