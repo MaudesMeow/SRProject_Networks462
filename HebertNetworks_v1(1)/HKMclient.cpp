@@ -153,30 +153,35 @@ void sendKillswitch(int sock)
 {
         // this tells the server we are done
         packet killswitch;
-        killswitch.payload = new char[7 + BYTES_OF_PADDING]();
+        int payloadSize = 7;
+        int killcode = KILLCODE;
+
+        killswitch.payload = new char[payloadSize + BYTES_OF_PADDING]();
         // putting the sequence number at the front of the packet
-        killswitch.payload[0] = (char) ((-1 & 0xFF000000) >> 24); 
-        killswitch.payload[1] = (char) ((-1 & 0x00FF0000) >> 16);
-        killswitch.payload[2] = (char) ((-1 & 0x0000FF00) >> 8);
-        killswitch.payload[3] = (char)  (-1 & 0x000000FF);
+        killswitch.payload[0] = (char) ((killcode & 0xFF000000) >> 24); 
+        killswitch.payload[1] = (char) ((killcode & 0x00FF0000) >> 16);
+        killswitch.payload[2] = (char) ((killcode & 0x0000FF00) >> 8);
+        killswitch.payload[3] = (char)  (killcode & 0x000000FF);
 
         killswitch.payload[sizeof(int)] = 'b';
         killswitch.payload[sizeof(int) + 1] = 'y';
 
-        for (int i = 2; i < 5; i++)
+        for (int i = 2; i < payloadSize; i++)
         {
                 killswitch.payload[i + sizeof(int)] = 'e';
         }
-
-        crc newcrc = crcFun(&killswitch.payload[0], 7 + sizeof(int));
-        killswitch.payload[7 + sizeof(int)]     = (char) ((newcrc & 0xFF000000) >> 24);
-        killswitch.payload[7 + sizeof(int) + 1] = (char) ((newcrc & 0x00FF0000) >> 16);
-        killswitch.payload[7 + sizeof(int) + 2] = (char) ((newcrc & 0x0000FF00) >> 8);
-        killswitch.payload[7 + sizeof(int) + 3] = (char)  (newcrc & 0x000000FF);
-
-       
         
-        send(sock, &killswitch.payload, 15, 0);
+
+        crc newcrc = crcFun(&killswitch.payload[0], payloadSize + sizeof(int));
+
+        killswitch.payload[payloadSize + sizeof(int)]     = (char) ((newcrc & 0xFF000000) >> 24);
+        killswitch.payload[payloadSize + sizeof(int) + 1] = (char) ((newcrc & 0x00FF0000) >> 16);
+        killswitch.payload[payloadSize + sizeof(int) + 2] = (char) ((newcrc & 0x0000FF00) >> 8);
+        killswitch.payload[payloadSize + sizeof(int) + 3] = (char)  (newcrc & 0x000000FF);
+
+        int bufsize = payloadSize + BYTES_OF_PADDING;
+        send(sock, &bufsize, sizeof(bufsize), 0);
+        send(sock, killswitch.payload, bufsize, 0);
 }
 
 
@@ -367,7 +372,7 @@ int main(int argc, char const *argv[]) {
                 int packetBufSize; //used to resend packets
                 int globalPacketNumber; //used to track packets. Global number for the simulation
                 int sequenceNum; // for reference, might not be needed. should be equal to the index of the srpBuffer array
-                uint64_t timeoutTime; // used in timeout for each packet we send
+                chrono::high_resolution_clock::time_point timeoutTime; // used in timeout for each packet we send
                 char *payload; // this is what gets sent to server
                 bool isFull; //determines whether this packet is "zeroed", meaning we can write over it and ignore it.
                 bool isAcked; //is this packed acked?
@@ -516,8 +521,8 @@ int main(int argc, char const *argv[]) {
                         //if we timed out, resend packet from srpBuffer
                         if(srpBuffer[index].timeoutTime < chrono::high_resolution_clock::now()){
                                 cout << "resending packet " << srpBuffer[index].globalPacketNumber;
-                                cout << "bytes sent: " << bufsize << endl;
                                 int resendBufsize = srpBuffer[index].packetBufSize;
+                                cout << "bytes sent: " << resendBufsize << endl;
                                 send(sock, &resendBufsize, sizeof(resendBufsize), 0);
                                 send(sock, srpBuffer[index].payload, resendBufsize, 0);
                                 srpBuffer[index].timeoutTime = chrono::high_resolution_clock::now() + timeout; //timeout variable from line 307
