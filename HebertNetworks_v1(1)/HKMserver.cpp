@@ -117,9 +117,9 @@ int main(int argc, char const *argv[]) {
 
         sort(acksToLose, acksToLose+ackCount); // our acks to lose array is sorted.
                 
-        cout << "Waiting on connection to client" << endl;
+
 	int sock = CreateSocketServer(portNumber);
-        
+
         
         int *headerRecv = new int[3]();
 
@@ -178,6 +178,7 @@ int main(int argc, char const *argv[]) {
                                 }
                                 
                                 bool passedChecksum = false;
+                                cout << "Checksum failed" << endl;
                                                                 
                                 crc crcFromClient = (((((unsigned int) newPacket.message[pktlen-4]) << 24) & 0xFF000000) | 
                                                      ((((unsigned int) newPacket.message[pktlen-3]) << 16) & 0x00FF0000) |
@@ -189,6 +190,7 @@ int main(int argc, char const *argv[]) {
                                 if (crcFromClient == crcCalculated)
                                 {
                                         passedChecksum = true;
+                                        cout << "Checksum OK" << endl;
                                 }
 
                                 if(passedChecksum){
@@ -273,6 +275,13 @@ int main(int argc, char const *argv[]) {
                                                         //move the sliding window after effectively writing to the output file
                                                         windowLowerBound = (windowLowerBound+1) % (sequenceNumSize+1);
                                                         windowUpperBound = (windowUpperBound+1) % (sequenceNumSize+1);
+                                                        cout << "Current Window = [";
+                                                        int windowSection = windowLowerBound;
+                                                        while(windowSection != windowUpperBound){
+                                                                cout << windowSection << ", ";
+                                                                windowSection = (windowSection+1)%(sequenceNumSize+1);
+                                                        }
+                                                        cout << windowUpperBound << "]" << endl;
                                                 }
 
                                         } // checking if in window
