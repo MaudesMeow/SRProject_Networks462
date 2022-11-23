@@ -79,7 +79,8 @@ int *UserInputPromptGenerateErrorArray(int count, std::string errorType)
 int randomGeneratedErrorCount() 
 {
         srand (time(NULL));
-        int count = rand() % 200 + 5;
+        //int count = rand() % 200 + 5;
+        int count = 3;
         return count;
 }
 
@@ -91,7 +92,7 @@ int *randomGeneratedErrorArray(int count)
 
         for (int i = 0; i < count; i++)
         {
-                packNumsWithErrors[i] = rand() % 2000000; // mod 2 million
+                packNumsWithErrors[i] = rand() % 20; // mod 2 million
         }
         return packNumsWithErrors;
 }

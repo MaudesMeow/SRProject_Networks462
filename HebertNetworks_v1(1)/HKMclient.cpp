@@ -92,7 +92,7 @@ auto generateTimeoutFromPing(string ip)
 
         auto pingDiff = pingEnd - pingStart; // time it took for pingCount pings
 
-        return ((pingDiff / pingCount) * 16); // average time per ping, multiplied by 16 
+        return ((pingDiff / pingCount) * 32); // average time per ping, multiplied by 16 
 }
 
 // returns 0 for success, or something else for failure
@@ -366,18 +366,6 @@ int main(int argc, char const *argv[]) {
         string fileInput =""; // this is what we send to the server
         int currentSequenceNum = 0; // the sequence number of the packet we are reading from the file. Always needs to be in the window. Might be the same as window upper bound?
 
-        // defining our packet struct to keep track of the timeouts for each one we send
-        typedef struct Packet{
-        public:
-                int packetBufSize; //used to resend packets
-                int globalPacketNumber; //used to track packets. Global number for the simulation
-                int sequenceNum; // for reference, might not be needed. should be equal to the index of the srpBuffer array
-                chrono::high_resolution_clock::time_point timeoutTime; // used in timeout for each packet we send
-                char *payload; // this is what gets sent to server
-                bool isFull; //determines whether this packet is "zeroed", meaning we can write over it and ignore it.
-                bool isAcked; //is this packed acked?
-                }packet;
-
         // our selective repeat buffer to store the packtes in until they are acked
         packet srpBuffer[sequenceNumSize + 1];
 
@@ -388,12 +376,11 @@ int main(int argc, char const *argv[]) {
         int globalPacketNumber = 0;
         while(!readStream.eof()){
                 if((!((windowLowerBound < windowUpperBound) && (currentSequenceNum > windowUpperBound || currentSequenceNum < windowLowerBound))
-                || !(currentSequenceNum > windowUpperBound && currentSequenceNum < windowLowerBound))){
+                || (currentSequenceNum > windowUpperBound && currentSequenceNum < windowLowerBound))){
 
                         globalPacketNumber ++;
                         // create the next packet and add it to the sr buffer at the correct index
                         packet nextPacket;
-
 
                         // start with the sequence number we are on
                         nextPacket.sequenceNum = currentSequenceNum; // to use as reference later (if needed)
@@ -419,7 +406,6 @@ int main(int argc, char const *argv[]) {
 
                         //calculate the crc and add it to the end of the file
                         crc newcrc = crcFun(&nextPacket.payload[0], payloadSize + sizeof(currentSequenceNum));
-                cout << "crc: " << newcrc << endl;
                         nextPacket.payload[payloadSize + sizeof(currentSequenceNum)]     = (char) ((newcrc & 0xFF000000) >> 24);
                         nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 1] = (char) ((newcrc & 0x00FF0000) >> 16);
                         nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 2] = (char) ((newcrc & 0x0000FF00) >> 8);
@@ -428,15 +414,18 @@ int main(int argc, char const *argv[]) {
                         int bufsize = (payloadSize + BYTES_OF_PADDING); // size of packet to send
                         nextPacket.packetBufSize = bufsize;
                         //fail to send or send corrupt packets based on the global packet number
-                       if ((lostPacketCount != 0) && (globalPacketNumber == packetsToLose[indexOfNextPacketToLose]))
+                       if ((lostPacketCount != 0) && (nextPacket.globalPacketNumber == packetsToLose[indexOfNextPacketToLose]))
                        {
+                                cout << "losing packet " << nextPacket.globalPacketNumber << endl;
                                 indexOfNextPacketToLose++;
                                 if (indexOfNextPacketToLose == lostPacketCount)
                                 {
                                         lostPacketCount = 0;
                                 }
-                       } else if ((corruptPacketCount !=0) && (globalPacketNumber == packetsToCorrupt[indexOfNextPacketToCorrupt]))
+                       } else if ((corruptPacketCount !=0) && (nextPacket.globalPacketNumber == packetsToCorrupt[indexOfNextPacketToCorrupt]))
                        {
+
+                                cout << "corrupting packet " << nextPacket.globalPacketNumber << endl;
                                 packet tempPacket;
                                 tempPacket.payload = new char[packetSize + BYTES_OF_PADDING]();
 
@@ -460,7 +449,7 @@ int main(int argc, char const *argv[]) {
                                 //if payload is bigger than just the sequence number and crc, we have a packet to send.
                                 //send the packet and its size to the server, and tell the user we did it.
                                 if(bufsize > BYTES_OF_PADDING){
-                                        cout << "bytes sent: " << bufsize << endl;
+                                        cout << "sending packet " << nextPacket.globalPacketNumber << endl;
                                         send(sock, &bufsize, sizeof(bufsize), 0);
                                         send(sock, tempPacket.payload, bufsize, 0); //sends the corrupted packet, but does timeout for the normal one.
                                         nextPacket.timeoutTime = chrono::high_resolution_clock::now() + timeout;
@@ -470,13 +459,14 @@ int main(int argc, char const *argv[]) {
                                 //if payload is bigger than just the sequence number and crc, we have a packet to send.
                                 //send the packet and its size to the server, and tell the user we did it.
                                 if(bufsize > BYTES_OF_PADDING){
-                                        cout << "bytes sent: " << bufsize << endl;
+                                        cout << "sending packet " << nextPacket.globalPacketNumber << endl;
                                         send(sock, &bufsize, sizeof(bufsize), 0);
                                         send(sock, nextPacket.payload, bufsize, 0);
                                         //timeout variable from line 307
                                         nextPacket.timeoutTime = chrono::high_resolution_clock::now() + timeout;
                                 }
                        }
+
 
                         //we're waiting on the ack for this now.
                         srpBuffer[currentSequenceNum] = nextPacket;
@@ -486,56 +476,84 @@ int main(int argc, char const *argv[]) {
                         currentSequenceNum = (currentSequenceNum + 1) % (sequenceNumSize + 1);
                 }
 
-                // receiving our ack here.
-                // TODO: implement this shiz.
-                int ackReceived;
-                recv(sock, &ackReceived, sizeof(ackReceived), 0);
+                int checkStatus;
+                ioctl(sock, FIONREAD, &checkStatus);
 
-                //if we recieved an ack for the lower bound of our window, we need to make sure we aren't waiting on stuff anymore.
-                if(ackReceived == windowLowerBound){
+                if (checkStatus)
+                {
+                
+                        int ackReceived;
+                        recv(sock, &ackReceived, sizeof(ackReceived), 0);
+
+                        cout << "ack " << ackReceived << " received.\n\n" << endl;
+
+                        //if we recieved an ack for the lower bound of our window, we need to make sure we aren't waiting on stuff anymore.
+                        if(ackReceived == windowLowerBound){
                                 
-                        //clear this index. This packet "doesn't exist" as far as we are concerned.
-                        srpBuffer[ackReceived].isFull = false;
+                                //clear this index. This packet "doesn't exist" as far as we are concerned.
+                                srpBuffer[ackReceived].isFull = false;
 
-                        //slide the window
-                        windowLowerBound ++;
-                        windowUpperBound ++;
-
-                        //make sure we move the window to compensate for all other previously recieved acks for packets that we've recorded.
-                        while(srpBuffer[windowLowerBound].isAcked && srpBuffer[windowLowerBound].isFull){
-
-                                srpBuffer[windowLowerBound].isFull = false;
+                                //slide the window
                                 windowLowerBound ++;
                                 windowUpperBound ++;
-                                
-                        }
 
-                } else {
-                        //we've recieved the ack for this packet, but it isn't the lowerbound one.
-                        srpBuffer[ackReceived].isAcked = true;
+                                //make sure we move the window to compensate for all other previously recieved acks for packets that we've recorded.
+                                while(srpBuffer[windowLowerBound].isAcked && srpBuffer[windowLowerBound].isFull){
+
+                                        srpBuffer[windowLowerBound].isFull = false;
+                                        windowLowerBound ++;
+                                        windowUpperBound ++;
+                                        
+                                }
+
+                        } else {
+                                //we've recieved the ack for this packet, but it isn't the lowerbound one.
+                                srpBuffer[ackReceived].isAcked = true;
+                        }
                 }
 
                 //check for timeouts, and resend all packets that have timed out.
                 int index = windowLowerBound;
-                while(windowLowerBound != windowUpperBound){
+                auto timeNow = chrono::high_resolution_clock::now();
+                while((index != windowUpperBound) && (index < globalPacketNumber)){
                         //if we timed out, resend packet from srpBuffer
+<<<<<<< HEAD
                         if(srpBuffer[index].timeoutTime < chrono::high_resolution_clock::now()){
                                 cout << "resending packet " << srpBuffer[index].globalPacketNumber << std::flush;
+=======
+                        if((srpBuffer[index].timeoutTime < timeNow) && !srpBuffer[index].isAcked && srpBuffer[index].isFull){
+                                cout << "packet " << index << " timed out." << endl;
+                                cout << "resending packet " << srpBuffer[index].globalPacketNumber << endl;
+
+>>>>>>> 6fe361e6af21ecfe9c31ed5525670e70569319e1
                                 int resendBufsize = srpBuffer[index].packetBufSize;
                                 cout << "bytes sent: " << resendBufsize << endl;
+
                                 send(sock, &resendBufsize, sizeof(resendBufsize), 0);
                                 send(sock, srpBuffer[index].payload, resendBufsize, 0);
-                                srpBuffer[index].timeoutTime = chrono::high_resolution_clock::now() + timeout; //timeout variable from line 307
-                        }
 
-                        index += (index +1) % (sequenceNumSize=1);
+                                srpBuffer[index].timeoutTime = timeNow + timeout; //timeout variable from line 307
+                        }
+                        index = (index +1) % (sequenceNumSize+1);
                 }
                 
 
         }
 
-        sendKillswitch(sock);
+        int killAck;
+        bool serverKilled = false;
+        while (!serverKilled)
+        {
+                sendKillswitch(sock);
+                int received = recv(sock, &killAck, sizeof(killAck), 0);
 
+                if (received > 0)
+                {
+                        serverKilled = true;
+                }
+                
+
+        }
         //we're done sending packets. finish everything up.
         cout << "Packets sent. Complete"<< endl;
         string verify = "md5sum " + fileName;

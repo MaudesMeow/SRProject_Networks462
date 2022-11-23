@@ -163,8 +163,7 @@ int main(int argc, char const *argv[]) {
                         int n = recv(sock, &bufferSize, sizeof(bufferSize), 0); // number of bytes received
                         if(n > 0) {
                                 char buffer[bufferSize];
-                                int pktlen = recv(sock, buffer, sizeof(buffer), 0);
-                                cout << "\n\npktlen: " << pktlen << endl;
+                                int pktlen = recv(sock, buffer, bufferSize, 0);
 
 
                                 //this is the packet that we're going to pull from the buffer.
@@ -184,10 +183,8 @@ int main(int argc, char const *argv[]) {
                                                      ((((unsigned int) newPacket.message[pktlen-3]) << 16) & 0x00FF0000) |
                                                      ((((unsigned int) newPacket.message[pktlen-2]) << 8)  & 0x0000FF00) |
                                                       (((unsigned int) newPacket.message[pktlen-1])        & 0x000000FF));
-                                cout << "crcFromClient: " << crcFromClient << endl;
                                 
                                 crc crcCalculated = crcFun(&newPacket.message[0], pktlen - sizeof(crc)); // don't include the crc at the end of the packet when we are calculating it.
-                                cout << "crcCalculated: " << crcCalculated << endl;
                                 
                                 if (crcFromClient == crcCalculated)
                                 {
@@ -206,6 +203,7 @@ int main(int argc, char const *argv[]) {
                                         // the client will send a sequence number of -1 with dummy message when it is done reading in from the file.
                                         if (packetSequenceNumber == KILLCODE)
                                         {
+                                                send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
                                                 weAreDone = true;
                                                 continue; 
                                         }
