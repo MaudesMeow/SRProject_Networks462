@@ -32,7 +32,7 @@ std::string UserInputPromptFile(std::string prompt)
 int UserInputPromptErrorGenerationMethod(std::string errorType)
 {
         int errorCode;
-        std::cout << "How would you like to generate the" << errorType << " errors?" << std::endl;
+        std::cout << "How would you like to generate the " << errorType << " errors?" << std::endl;
         std::cout << "Randomly generated (Enter 1)." << std::endl;
         std::cout << "User generated (Enter 2)." << std::endl;
         std::cout << "Default: none (Enter any other value). " << std::endl;
@@ -65,7 +65,8 @@ int UserInputPromptErrorCount(std::string errorType)
 int *UserInputPromptGenerateErrorArray(int count, std::string errorType)
 {
         int *packNumsWithErrors = new int[count]();
-        std::cout << "Enter the packet numbers for which " << errorType << ": " << std::endl;
+        std::cout << "Enter the packet numbers for the next " << errorType << ": " << std::endl;
+
         for (int i = 0; i < count; i++)
         {
                 std::cin >> packNumsWithErrors[i];
