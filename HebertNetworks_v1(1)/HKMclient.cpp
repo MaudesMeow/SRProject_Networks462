@@ -158,26 +158,15 @@ void sendKillswitch(int sock)
 
         killswitch.payload = new char[payloadSize + BYTES_OF_PADDING]();
         // putting the sequence number at the front of the packet
-<<<<<<< HEAD
-        killswitch.payload[0] = (char) ((20000000 & 0xFF000000) >> 24); 
-        killswitch.payload[1] = (char) ((20000000 & 0x00FF0000) >> 16);
-        killswitch.payload[2] = (char) ((20000000 & 0x0000FF00) >> 8);
-        killswitch.payload[3] = (char)  (20000000 & 0x000000FF);
-=======
         killswitch.payload[0] = (char) ((killcode & 0xFF000000) >> 24); 
         killswitch.payload[1] = (char) ((killcode & 0x00FF0000) >> 16);
         killswitch.payload[2] = (char) ((killcode & 0x0000FF00) >> 8);
         killswitch.payload[3] = (char)  (killcode & 0x000000FF);
->>>>>>> 9c25719b245a1c76aa89aa589e6ad25c6a647481
 
         killswitch.payload[sizeof(int)] = 'b';
         killswitch.payload[sizeof(int) + 1] = 'y';
 
-<<<<<<< HEAD
-        for (int i = 2; i < 7; i++)
-=======
         for (int i = 2; i < payloadSize; i++)
->>>>>>> 9c25719b245a1c76aa89aa589e6ad25c6a647481
         {
                 killswitch.payload[i + sizeof(int)] = 'e';
         }
