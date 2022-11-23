@@ -517,15 +517,8 @@ int main(int argc, char const *argv[]) {
                 auto timeNow = chrono::high_resolution_clock::now();
                 while((index != windowUpperBound) && (index < globalPacketNumber)){
                         //if we timed out, resend packet from srpBuffer
-<<<<<<< HEAD
                         if(srpBuffer[index].timeoutTime < chrono::high_resolution_clock::now()){
                                 cout << "resending packet " << srpBuffer[index].globalPacketNumber << std::flush;
-=======
-                        if((srpBuffer[index].timeoutTime < timeNow) && !srpBuffer[index].isAcked && srpBuffer[index].isFull){
-                                cout << "packet " << index << " timed out." << endl;
-                                cout << "resending packet " << srpBuffer[index].globalPacketNumber << endl;
-
->>>>>>> 6fe361e6af21ecfe9c31ed5525670e70569319e1
                                 int resendBufsize = srpBuffer[index].packetBufSize;
                                 cout << "bytes sent: " << resendBufsize << endl;
 
