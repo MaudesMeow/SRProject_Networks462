@@ -92,7 +92,7 @@ auto generateTimeoutFromPing(string ip)
 
         auto pingDiff = pingEnd - pingStart; // time it took for pingCount pings
 
-        return ((pingDiff / pingCount) * 512); // average time per ping, multiplied by 16 
+        return ((pingDiff / pingCount) * 32); // average time per ping, multiplied by 16 
 }
 
 // returns 0 for success, or something else for failure
@@ -388,12 +388,13 @@ int main(int argc, char const *argv[]) {
         int globalPacketNumber = 0;
         while(!readStream.eof()){
                 if((!((windowLowerBound < windowUpperBound) && (currentSequenceNum > windowUpperBound || currentSequenceNum < windowLowerBound))
-                || !(currentSequenceNum > windowUpperBound && currentSequenceNum < windowLowerBound))){
+                || (currentSequenceNum > windowUpperBound && currentSequenceNum < windowLowerBound))){
 
                         globalPacketNumber ++;
                         // create the next packet and add it to the sr buffer at the correct index
                         packet nextPacket;
-
+                        cout << "lower bound: " << windowLowerBound << endl;
+                        cout << "upper bound: " << windowUpperBound << endl;
 
                         // start with the sequence number we are on
                         nextPacket.sequenceNum = currentSequenceNum; // to use as reference later (if needed)
@@ -428,18 +429,18 @@ int main(int argc, char const *argv[]) {
                         int bufsize = (payloadSize + BYTES_OF_PADDING); // size of packet to send
                         nextPacket.packetBufSize = bufsize;
                         //fail to send or send corrupt packets based on the global packet number
-                       if ((lostPacketCount != 0) && (globalPacketNumber == packetsToLose[indexOfNextPacketToLose]))
+                       if ((lostPacketCount != 0) && (nextPacket.globalPacketNumber == packetsToLose[indexOfNextPacketToLose]))
                        {
-                                cout << "losing packet " << globalPacketNumber << endl;
+                                cout << "losing packet " << nextPacket.globalPacketNumber << endl;
                                 indexOfNextPacketToLose++;
                                 if (indexOfNextPacketToLose == lostPacketCount)
                                 {
                                         lostPacketCount = 0;
                                 }
-                       } else if ((corruptPacketCount !=0) && (globalPacketNumber == packetsToCorrupt[indexOfNextPacketToCorrupt]))
+                       } else if ((corruptPacketCount !=0) && (nextPacket.globalPacketNumber == packetsToCorrupt[indexOfNextPacketToCorrupt]))
                        {
 
-                                cout << "corrupting packet " << globalPacketNumber << endl;
+                                cout << "corrupting packet " << nextPacket.globalPacketNumber << endl;
                                 packet tempPacket;
                                 tempPacket.payload = new char[packetSize + BYTES_OF_PADDING]();
 
@@ -463,6 +464,7 @@ int main(int argc, char const *argv[]) {
                                 //if payload is bigger than just the sequence number and crc, we have a packet to send.
                                 //send the packet and its size to the server, and tell the user we did it.
                                 if(bufsize > BYTES_OF_PADDING){
+                                        cout << "sending packet " << nextPacket.globalPacketNumber << endl;
                                         cout << "bytes sent: " << bufsize << endl;
                                         send(sock, &bufsize, sizeof(bufsize), 0);
                                         send(sock, tempPacket.payload, bufsize, 0); //sends the corrupted packet, but does timeout for the normal one.
@@ -473,6 +475,7 @@ int main(int argc, char const *argv[]) {
                                 //if payload is bigger than just the sequence number and crc, we have a packet to send.
                                 //send the packet and its size to the server, and tell the user we did it.
                                 if(bufsize > BYTES_OF_PADDING){
+                                        cout << "sending packet " << nextPacket.globalPacketNumber << endl;
                                         cout << "bytes sent: " << bufsize << endl;
                                         send(sock, &bufsize, sizeof(bufsize), 0);
                                         send(sock, nextPacket.payload, bufsize, 0);
@@ -499,7 +502,7 @@ int main(int argc, char const *argv[]) {
                         int ackReceived;
                         recv(sock, &ackReceived, sizeof(ackReceived), 0);
 
-                        cout << "ack " << ackReceived << " received." << endl;
+                        cout << "ack " << ackReceived << " received.\n\n" << endl;
 
                         //if we recieved an ack for the lower bound of our window, we need to make sure we aren't waiting on stuff anymore.
                         if(ackReceived == windowLowerBound){
@@ -529,11 +532,11 @@ int main(int argc, char const *argv[]) {
                 //check for timeouts, and resend all packets that have timed out.
                 int index = windowLowerBound;
                 auto timeNow = chrono::high_resolution_clock::now();
-                while(index != windowUpperBound){
+                while((index != windowUpperBound) && (index < globalPacketNumber)){
                         //if we timed out, resend packet from srpBuffer
-                        if(srpBuffer[index].timeoutTime < timeNow){
-                                cout << "packet " << globalPacketNumber << " timed out." << endl;
-                                cout << "resending packet " << srpBuffer[index].globalPacketNumber;
+                        if((srpBuffer[index].timeoutTime < timeNow) && !srpBuffer[index].isAcked && srpBuffer[index].isFull){
+                                cout << "packet " << index << " timed out." << endl;
+                                cout << "resending packet " << srpBuffer[index].globalPacketNumber << endl;
 
                                 int resendBufsize = srpBuffer[index].packetBufSize;
                                 cout << "bytes sent: " << resendBufsize << endl;
@@ -543,7 +546,6 @@ int main(int argc, char const *argv[]) {
 
                                 srpBuffer[index].timeoutTime = timeNow + timeout; //timeout variable from line 307
                         }
-
                         index = (index +1) % (sequenceNumSize+1);
                 }
                 
