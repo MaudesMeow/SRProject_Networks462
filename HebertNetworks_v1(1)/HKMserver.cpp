@@ -117,9 +117,9 @@ int main(int argc, char const *argv[]) {
 
         sort(acksToLose, acksToLose+ackCount); // our acks to lose array is sorted.
                 
-        cout << "Waiting on connection to client" << endl;
+
 	int sock = CreateSocketServer(portNumber);
-        
+
         
         int *headerRecv = new int[3]();
 
@@ -275,11 +275,10 @@ int main(int argc, char const *argv[]) {
                                                         //move the sliding window after effectively writing to the output file
                                                         windowLowerBound = (windowLowerBound+1) % (sequenceNumSize+1);
                                                         windowUpperBound = (windowUpperBound+1) % (sequenceNumSize+1);
-                                                        cout << "Current Window = [";
-                                                        int i = windowLowerBound;
-                                                        while(i != windowUpperBound){
-                                                                cout << i << ", ";
-                                                                i = (i+1)%(sequenceNumSize+1);
+                                                        int windowSection = windowLowerBound;
+                                                        while(windowSection != windowUpperBound){
+                                                                cout << windowSection << ", ";
+                                                                windowSection = (windowSection+1)%(sequenceNumSize+1);
                                                         }
                                                         cout << windowUpperBound << "]" << endl;
                                                 }

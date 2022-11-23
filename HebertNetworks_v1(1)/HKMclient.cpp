@@ -506,10 +506,10 @@ int main(int argc, char const *argv[]) {
                                 windowLowerBound = (windowLowerBound+1) % (sequenceNumSize+1);
                                 windowUpperBound = (windowUpperBound+1) % (sequenceNumSize+1);
                                 cout << "Current Window = [";
-                                int i = windowLowerBound;
-                                while(i != windowUpperBound){
-                                        cout << i << ", ";
-                                        i = (i+1)%(sequenceNumSize+1);
+                                int windowSection = windowLowerBound;
+                                while(windowSection != windowUpperBound){
+                                        cout << windowSection << ", ";
+                                        windowSection = (windowSection+1)%(sequenceNumSize+1);
                                 }
                                 cout << windowUpperBound << "]" << endl;
 
@@ -520,10 +520,10 @@ int main(int argc, char const *argv[]) {
                                         windowLowerBound = (windowLowerBound+1) % (sequenceNumSize+1);
                                         windowUpperBound = (windowUpperBound+1) % (sequenceNumSize+1);
                                         cout << "Current Window = [";
-                                        int i = windowLowerBound;
-                                        while(i != windowUpperBound){
-                                                cout << i << ", ";
-                                                i = (i+1)%(sequenceNumSize+1);
+                                        windowSection = windowLowerBound;
+                                        while(windowSection != windowUpperBound){
+                                                cout << windowSection << ", ";
+                                                windowSection = (i+1)%(sequenceNumSize+1);
                                         }
                                         cout << windowUpperBound << "]" << endl;
                                         
