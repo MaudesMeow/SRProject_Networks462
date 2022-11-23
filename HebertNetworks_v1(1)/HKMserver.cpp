@@ -209,6 +209,7 @@ int main(int argc, char const *argv[]) {
                                         if (packetSequenceNumber == KILLCODE)
                                         {
                                                 send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
+                                                totalNumPacketsRecieved--;
                                                 weAreDone = true;
                                                 continue; 
                                         }else{
@@ -301,9 +302,10 @@ int main(int argc, char const *argv[]) {
                 } // checkstatus (ioctl confirmed)
 
        } // while loop
+       system("wait 1");
         cout << "Last packet seq# received: " << lastPacketSequenceNumber << endl;
         cout << "Number of original packets recieved: " << numOriginalPackets << endl; 
-        cout << "Number of retransmitted packets: " << totalNumPacketsRecieved - numOriginalPackets;
+        cout << "Number of retransmitted packets: " << (totalNumPacketsRecieved - numOriginalPackets) << endl;
         string check = "md5sum " + fileName;
         outFile.close();
         std::system(check.c_str());

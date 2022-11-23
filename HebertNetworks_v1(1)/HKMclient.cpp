@@ -432,7 +432,7 @@ int main(int argc, char const *argv[]) {
                                 }
 
                                 cout << "Packet " << nextPacket.sequenceNum << " sent" << endl;
-                                
+
                        } else if ((corruptPacketCount !=0) && (nextPacket.globalPacketNumber == packetsToCorrupt[indexOfNextPacketToCorrupt]))
                        {
 
@@ -588,7 +588,7 @@ int main(int argc, char const *argv[]) {
 
         int timeDiffNanoseconds = timeDifference.count();
 
-        double timeDiffSeconds = timeDiffNanoseconds/1000000000.0;
+        double timeDiffSeconds = (double)timeDiffNanoseconds/1000000000.0;
 
         int successfulMbSent = successfulBytesSent * 1000000;
 
