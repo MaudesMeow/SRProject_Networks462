@@ -163,7 +163,7 @@ int main(int argc, char const *argv[]) {
                         int n = recv(sock, &bufferSize, sizeof(bufferSize), 0); // number of bytes received
                         if(n > 0) {
                                 char buffer[bufferSize];
-                                int pktlen = recv(sock, buffer, sizeof(buffer), 0);
+                                int pktlen = recv(sock, buffer, bufferSize, 0);
                                 cout << "\n\npktlen: " << pktlen << endl;
 
 

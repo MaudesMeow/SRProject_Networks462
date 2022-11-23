@@ -92,7 +92,7 @@ auto generateTimeoutFromPing(string ip)
 
         auto pingDiff = pingEnd - pingStart; // time it took for pingCount pings
 
-        return ((pingDiff / pingCount) * 16); // average time per ping, multiplied by 16 
+        return ((pingDiff / pingCount) * 512); // average time per ping, multiplied by 16 
 }
 
 // returns 0 for success, or something else for failure
@@ -430,6 +430,7 @@ int main(int argc, char const *argv[]) {
                         //fail to send or send corrupt packets based on the global packet number
                        if ((lostPacketCount != 0) && (globalPacketNumber == packetsToLose[indexOfNextPacketToLose]))
                        {
+                                cout << "losing packet " << globalPacketNumber << endl;
                                 indexOfNextPacketToLose++;
                                 if (indexOfNextPacketToLose == lostPacketCount)
                                 {
@@ -437,6 +438,8 @@ int main(int argc, char const *argv[]) {
                                 }
                        } else if ((corruptPacketCount !=0) && (globalPacketNumber == packetsToCorrupt[indexOfNextPacketToCorrupt]))
                        {
+
+                                cout << "corrupting packet " << globalPacketNumber << endl;
                                 packet tempPacket;
                                 tempPacket.payload = new char[packetSize + BYTES_OF_PADDING]();
 
@@ -478,6 +481,7 @@ int main(int argc, char const *argv[]) {
                                 }
                        }
 
+
                         //we're waiting on the ack for this now.
                         srpBuffer[currentSequenceNum] = nextPacket;
                         
@@ -486,49 +490,61 @@ int main(int argc, char const *argv[]) {
                         currentSequenceNum = (currentSequenceNum + 1) % (sequenceNumSize + 1);
                 }
 
-                // receiving our ack here.
-                // TODO: implement this shiz.
-                int ackReceived;
-                recv(sock, &ackReceived, sizeof(ackReceived), 0);
+                int checkStatus;
+                ioctl(sock, FIONREAD, &checkStatus);
 
-                //if we recieved an ack for the lower bound of our window, we need to make sure we aren't waiting on stuff anymore.
-                if(ackReceived == windowLowerBound){
+                if (checkStatus)
+                {
+                
+                        int ackReceived;
+                        recv(sock, &ackReceived, sizeof(ackReceived), 0);
+
+                        cout << "ack " << ackReceived << " received." << endl;
+
+                        //if we recieved an ack for the lower bound of our window, we need to make sure we aren't waiting on stuff anymore.
+                        if(ackReceived == windowLowerBound){
                                 
-                        //clear this index. This packet "doesn't exist" as far as we are concerned.
-                        srpBuffer[ackReceived].isFull = false;
+                                //clear this index. This packet "doesn't exist" as far as we are concerned.
+                                srpBuffer[ackReceived].isFull = false;
 
-                        //slide the window
-                        windowLowerBound ++;
-                        windowUpperBound ++;
-
-                        //make sure we move the window to compensate for all other previously recieved acks for packets that we've recorded.
-                        while(srpBuffer[windowLowerBound].isAcked && srpBuffer[windowLowerBound].isFull){
-
-                                srpBuffer[windowLowerBound].isFull = false;
+                                //slide the window
                                 windowLowerBound ++;
                                 windowUpperBound ++;
-                                
-                        }
 
-                } else {
-                        //we've recieved the ack for this packet, but it isn't the lowerbound one.
-                        srpBuffer[ackReceived].isAcked = true;
+                                //make sure we move the window to compensate for all other previously recieved acks for packets that we've recorded.
+                                while(srpBuffer[windowLowerBound].isAcked && srpBuffer[windowLowerBound].isFull){
+
+                                        srpBuffer[windowLowerBound].isFull = false;
+                                        windowLowerBound ++;
+                                        windowUpperBound ++;
+                                        
+                                }
+
+                        } else {
+                                //we've recieved the ack for this packet, but it isn't the lowerbound one.
+                                srpBuffer[ackReceived].isAcked = true;
+                        }
                 }
 
                 //check for timeouts, and resend all packets that have timed out.
                 int index = windowLowerBound;
-                while(windowLowerBound != windowUpperBound){
+                auto timeNow = chrono::high_resolution_clock::now();
+                while(index != windowUpperBound){
                         //if we timed out, resend packet from srpBuffer
-                        if(srpBuffer[index].timeoutTime < chrono::high_resolution_clock::now()){
+                        if(srpBuffer[index].timeoutTime < timeNow){
+                                cout << "packet " << globalPacketNumber << " timed out." << endl;
                                 cout << "resending packet " << srpBuffer[index].globalPacketNumber;
+
                                 int resendBufsize = srpBuffer[index].packetBufSize;
                                 cout << "bytes sent: " << resendBufsize << endl;
+
                                 send(sock, &resendBufsize, sizeof(resendBufsize), 0);
                                 send(sock, srpBuffer[index].payload, resendBufsize, 0);
-                                srpBuffer[index].timeoutTime = chrono::high_resolution_clock::now() + timeout; //timeout variable from line 307
+
+                                srpBuffer[index].timeoutTime = timeNow + timeout; //timeout variable from line 307
                         }
 
-                        index += (index +1) % (sequenceNumSize=1);
+                        index = (index +1) % (sequenceNumSize+1);
                 }
                 
 
