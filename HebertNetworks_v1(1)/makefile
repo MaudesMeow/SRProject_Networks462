@@ -30,7 +30,7 @@ olivertoposeidon: archive
 	scp HKMSRP.zip mahano0661@poseidon1.cs.uwec.edu:/USERS/ALL/mahano0661/newCS462
 
 jordantoposeidon: archive
-	scp HKMSRP.zip hebertj4194@poseidon0.cs.uwec.edu:/USERS/ALL/HEBERTJ4194/CS462Test
+	scp HKMSRP.zip hebertj4194@poseidon0.cs.uwec.edu:/USERS/ALL/HEBERTJ4194/CS462v2
 
 alextoposeidon: archive
 	scp HKMSRP.zip Kamkeam5583@poseidon0.cs.uwec.edu:/USERS/ALL/Kamkeam5583/networks/networks2

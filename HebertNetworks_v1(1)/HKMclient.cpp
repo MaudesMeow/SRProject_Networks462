@@ -494,15 +494,15 @@ int main(int argc, char const *argv[]) {
                                 srpBuffer[ackReceived].isFull = false;
 
                                 //slide the window
-                                windowLowerBound ++;
-                                windowUpperBound ++;
+                                windowLowerBound = (windowLowerBound +1) % (sequenceNumSize +1);
+                                windowUpperBound = (windowUpperBound +1) % (sequenceNumSize +1);
 
                                 //make sure we move the window to compensate for all other previously recieved acks for packets that we've recorded.
                                 while(srpBuffer[windowLowerBound].isAcked && srpBuffer[windowLowerBound].isFull){
 
                                         srpBuffer[windowLowerBound].isFull = false;
-                                        windowLowerBound ++;
-                                        windowUpperBound ++;
+                                        windowLowerBound = (windowLowerBound +1) % (sequenceNumSize +1);
+                                        windowUpperBound = (windowUpperBound +1) % (sequenceNumSize +1);
                                         
                                 }
 
