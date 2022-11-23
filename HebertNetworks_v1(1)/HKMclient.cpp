@@ -362,7 +362,7 @@ int main(int argc, char const *argv[]) {
         
         //creates an ifstream named "readStream" that reads from the user's selected file
         ifstream readStream(fileName);
-        char placeHolder;        
+        char placeHolder;
         string fileInput =""; // this is what we send to the server
         int currentSequenceNum = 0; // the sequence number of the packet we are reading from the file. Always needs to be in the window. Might be the same as window upper bound?
 
@@ -379,6 +379,10 @@ int main(int argc, char const *argv[]) {
         int successfulBytesSent = 0;
         chrono::high_resolution_clock::time_point startTime = chrono::high_resolution_clock::now();
         while(!readStream.eof()){
+                cout << "windowLowerBound < windowUpperBound" << windowLowerBound < windowUpperBound << endl;
+                cout << "currentSequenceNum > windowUpperBound" << currentSequenceNum > windowUpperBound << endl;
+                cout << "currentSequenceNum < windowLowerBound" << currentSequenceNum < windowLowerBound << end;
+
                 if((!((windowLowerBound < windowUpperBound) && (currentSequenceNum > windowUpperBound || currentSequenceNum < windowLowerBound))
                 || (currentSequenceNum > windowUpperBound && currentSequenceNum < windowLowerBound))){
 
