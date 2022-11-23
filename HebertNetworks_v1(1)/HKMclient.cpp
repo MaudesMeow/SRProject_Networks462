@@ -552,8 +552,20 @@ int main(int argc, char const *argv[]) {
 
         }
 
-        sendKillswitch(sock);
+        int killAck;
+        bool serverKilled = false;
+        while (!serverKilled)
+        {
+                sendKillswitch(sock);
+                int received = recv(sock, &killAck, sizeof(killAck), 0);
 
+                if (received > 0)
+                {
+                        serverKilled = true;
+                }
+                
+
+        }
         //we're done sending packets. finish everything up.
         cout << "Packets sent. Complete"<< endl;
         string verify = "md5sum " + fileName;

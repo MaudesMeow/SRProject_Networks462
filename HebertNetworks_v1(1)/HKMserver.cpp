@@ -206,6 +206,7 @@ int main(int argc, char const *argv[]) {
                                         // the client will send a sequence number of -1 with dummy message when it is done reading in from the file.
                                         if (packetSequenceNumber == KILLCODE)
                                         {
+                                                send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
                                                 weAreDone = true;
                                                 continue; 
                                         }
