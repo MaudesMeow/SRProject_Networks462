@@ -149,7 +149,9 @@ int main(int argc, char const *argv[]) {
         //creates selectiverepeatbuffer
         packet *selectiveRepeatBuffer;
         selectiveRepeatBuffer = new packet[sequenceNumSize + 1](); // want largest index to be sequenceNumSize
-
+        int lastPacketSequenceNumber = 0;
+        int numOriginalPackets = 0;
+        int totalNumPacketsRecieved = 0;
         while (!weAreDone)
         {
                 int checkStatus = 0;
@@ -176,7 +178,7 @@ int main(int argc, char const *argv[]) {
                                 for(int i = 0; i < pktlen; i++){
                                         newPacket.message[i] = buffer[i];
                                 }
-                                
+                                totalNumPacketsRecieved ++;
                                 bool passedChecksum = false;
                                                                 
                                 crc crcFromClient = (((((unsigned int) newPacket.message[pktlen-4]) << 24) & 0xFF000000) | 
@@ -210,11 +212,28 @@ int main(int argc, char const *argv[]) {
                                                 send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
                                                 weAreDone = true;
                                                 continue; 
+                                        }else{
+                                        lastPacketSequenceNumber = packetSequenceNumber;
                                         }
-                                        
                                         
                                         //above windowUpperBound or below windowLowerBound
                                         if((windowLowerBound < windowUpperBound) && (packetSequenceNumber > windowUpperBound || packetSequenceNumber < windowLowerBound)){
+
+                                                if ((ackCount != 0) && (packetSequenceNumber == acksToLose[indexOfNextAckToLose]))
+                                                {
+                                                        indexOfNextAckToLose++;
+                                                        if (indexOfNextAckToLose == ackCount) // it's the last ack to lose
+                                                        {
+                                                                ackCount = 0; // this ensures we won't drop any more acks (on purpose)
+                                                        }                                                        
+                                                } else {
+                                                        //send an ack to the client indicating that we have recieved the packet.
+                                                        send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
+                                                       
+                                                }
+
+                                        }//between windowupperbound and windowLowerBound
+                                        else if(packetSequenceNumber > windowUpperBound && packetSequenceNumber < windowLowerBound){
                                                 
                                                 if ((ackCount != 0) && (packetSequenceNumber == acksToLose[indexOfNextAckToLose]))
                                                 {
@@ -226,20 +245,7 @@ int main(int argc, char const *argv[]) {
                                                 } else {
                                                         //send an ack to the client indicating that we have recieved the packet.
                                                         send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
-                                                }
-
-                                        }//between windowupperbound and windowLowerBound
-                                        else if(packetSequenceNumber > windowUpperBound && packetSequenceNumber < windowLowerBound){
-                                                if ((ackCount != 0) && (packetSequenceNumber == acksToLose[indexOfNextAckToLose]))
-                                                {
-                                                        indexOfNextAckToLose++;
-                                                        if (indexOfNextAckToLose == ackCount) // it's the last ack to lose
-                                                        {
-                                                                ackCount = 0; // this ensures we won't drop any more acks (on purpose)
-                                                        }                                                        
-                                                } else {
-                                                        //send an ack to the client indicating that we have recieved the packet.
-                                                        send(sock, &packetSequenceNumber, sizeof(packetSequenceNumber), 0);
+                                                        
                                                 }
                                         }
                                         else{
@@ -266,7 +272,7 @@ int main(int argc, char const *argv[]) {
                                                 //write packets to our output file
                                                 while(selectiveRepeatBuffer[windowLowerBound].isFull){
                                                         //
-
+                                                        
                                                         for(int j = sizeof(packetSequenceNumber); j < (selectiveRepeatBuffer[windowLowerBound].lengthOfPacket - (int) sizeof(crc)); j++){
                                                                 outFile << selectiveRepeatBuffer[windowLowerBound].message[j] << flush;
                                                         }
@@ -275,6 +281,7 @@ int main(int argc, char const *argv[]) {
                                                         selectiveRepeatBuffer[windowLowerBound].isFull = false;
                                                         
                                                         //move the sliding window after effectively writing to the output file
+                                                        numOriginalPackets ++;
                                                         windowLowerBound = (windowLowerBound+1) % (sequenceNumSize+1);
                                                         windowUpperBound = (windowUpperBound+1) % (sequenceNumSize+1);
                                                         cout << "Current Window = [";
@@ -295,7 +302,9 @@ int main(int argc, char const *argv[]) {
                 } // checkstatus (ioctl confirmed)
 
        } // while loop
-
+        cout << "Last packet seq# received: " << lastPacketSequenceNumber << endl;
+        cout << "Number of original packets recieved: " << numOriginalPackets << endl; 
+        cout << "Number of retransmitted packets: " << totalNumPacketsRecieved - numOriginalPackets;
         string check = "md5sum " + fileName;
         outFile.close();
         std::system(check.c_str());
