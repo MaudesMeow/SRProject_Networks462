@@ -366,18 +366,6 @@ int main(int argc, char const *argv[]) {
         string fileInput =""; // this is what we send to the server
         int currentSequenceNum = 0; // the sequence number of the packet we are reading from the file. Always needs to be in the window. Might be the same as window upper bound?
 
-        // defining our packet struct to keep track of the timeouts for each one we send
-        typedef struct Packet{
-        public:
-                int packetBufSize; //used to resend packets
-                int globalPacketNumber; //used to track packets. Global number for the simulation
-                int sequenceNum; // for reference, might not be needed. should be equal to the index of the srpBuffer array
-                chrono::high_resolution_clock::time_point timeoutTime; // used in timeout for each packet we send
-                char *payload; // this is what gets sent to server
-                bool isFull; //determines whether this packet is "zeroed", meaning we can write over it and ignore it.
-                bool isAcked; //is this packed acked?
-                }packet;
-
         // our selective repeat buffer to store the packtes in until they are acked
         packet srpBuffer[sequenceNumSize + 1];
 
@@ -393,8 +381,6 @@ int main(int argc, char const *argv[]) {
                         globalPacketNumber ++;
                         // create the next packet and add it to the sr buffer at the correct index
                         packet nextPacket;
-                        cout << "lower bound: " << windowLowerBound << endl;
-                        cout << "upper bound: " << windowUpperBound << endl;
 
                         // start with the sequence number we are on
                         nextPacket.sequenceNum = currentSequenceNum; // to use as reference later (if needed)
@@ -420,7 +406,6 @@ int main(int argc, char const *argv[]) {
 
                         //calculate the crc and add it to the end of the file
                         crc newcrc = crcFun(&nextPacket.payload[0], payloadSize + sizeof(currentSequenceNum));
-                cout << "crc: " << newcrc << endl;
                         nextPacket.payload[payloadSize + sizeof(currentSequenceNum)]     = (char) ((newcrc & 0xFF000000) >> 24);
                         nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 1] = (char) ((newcrc & 0x00FF0000) >> 16);
                         nextPacket.payload[payloadSize + sizeof(currentSequenceNum) + 2] = (char) ((newcrc & 0x0000FF00) >> 8);
@@ -465,7 +450,6 @@ int main(int argc, char const *argv[]) {
                                 //send the packet and its size to the server, and tell the user we did it.
                                 if(bufsize > BYTES_OF_PADDING){
                                         cout << "sending packet " << nextPacket.globalPacketNumber << endl;
-                                        cout << "bytes sent: " << bufsize << endl;
                                         send(sock, &bufsize, sizeof(bufsize), 0);
                                         send(sock, tempPacket.payload, bufsize, 0); //sends the corrupted packet, but does timeout for the normal one.
                                         nextPacket.timeoutTime = chrono::high_resolution_clock::now() + timeout;
@@ -476,7 +460,6 @@ int main(int argc, char const *argv[]) {
                                 //send the packet and its size to the server, and tell the user we did it.
                                 if(bufsize > BYTES_OF_PADDING){
                                         cout << "sending packet " << nextPacket.globalPacketNumber << endl;
-                                        cout << "bytes sent: " << bufsize << endl;
                                         send(sock, &bufsize, sizeof(bufsize), 0);
                                         send(sock, nextPacket.payload, bufsize, 0);
                                         //timeout variable from line 307
