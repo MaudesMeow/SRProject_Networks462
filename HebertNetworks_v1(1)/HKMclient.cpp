@@ -72,7 +72,7 @@ int UserInputPromptSequence()
 int UserInputPromptTimeout()
 {
         int timeout;
-        cout << "Enter the timeout value or -1 for default (Generated from pinging the server)" << endl;
+        cout << "Enter the timeout value in nanoseconds or -1 for default (Generated from pinging the server)" << endl;
         cin >> timeout;
         return timeout;
 }
@@ -494,15 +494,15 @@ int main(int argc, char const *argv[]) {
                                 srpBuffer[ackReceived].isFull = false;
 
                                 //slide the window
-                                windowLowerBound ++;
-                                windowUpperBound ++;
-
+                                windowLowerBound = (windowLowerBound+1) % (sequenceNumSize+1);
+                                windowUpperBound = (windowUpperBound+1) % (sequenceNumSize+1);
+                                        
                                 //make sure we move the window to compensate for all other previously recieved acks for packets that we've recorded.
                                 while(srpBuffer[windowLowerBound].isAcked && srpBuffer[windowLowerBound].isFull){
 
                                         srpBuffer[windowLowerBound].isFull = false;
-                                        windowLowerBound ++;
-                                        windowUpperBound ++;
+                                        windowLowerBound = (windowLowerBound+1) % (sequenceNumSize+1);
+                                        windowUpperBound = (windowUpperBound+1) % (sequenceNumSize+1);
                                         
                                 }
 
@@ -542,7 +542,7 @@ int main(int argc, char const *argv[]) {
                 sendKillswitch(sock);
                 int received = recv(sock, &killAck, sizeof(killAck), 0);
 
-                if (received > 0)
+                if (received > 0 && killAck == KILLCODE)
                 {
                         serverKilled = true;
                 }

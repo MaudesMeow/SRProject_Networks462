@@ -117,9 +117,9 @@ int main(int argc, char const *argv[]) {
 
         sort(acksToLose, acksToLose+ackCount); // our acks to lose array is sorted.
                 
-
+        cout << "Waiting on connection to client" << endl;
 	int sock = CreateSocketServer(portNumber);
-
+        
         
         int *headerRecv = new int[3]();
 
