@@ -204,7 +204,7 @@ int main(int argc, char const *argv[]) {
                                                                      (((unsigned int) newPacket.message[3])        & 0x000000FF));
                                         
                                         // the client will send a sequence number of -1 with dummy message when it is done reading in from the file.
-                                        if (packetSequenceNumber == -1)
+                                        if (packetSequenceNumber == KILLCODE)
                                         {
                                                 weAreDone = true;
                                                 continue; 
@@ -286,8 +286,6 @@ int main(int argc, char const *argv[]) {
                 } // checkstatus (ioctl confirmed)
 
        } // while loop
-
-        delete[] selectiveRepeatBuffer;
 
         string check = "md5sum " + fileName;
         outFile.close();

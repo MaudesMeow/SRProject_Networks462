@@ -4,13 +4,14 @@
 #include <stdio.h>
 #include <string>
 
-#define PORT_NUMBER 9021    // Default port number
-#define WINDOW_SIZE 16      // Default window size
-#define PACKET_SIZE 1024    // Default packet size
-#define SEQUENCE_SIZE 64    // Default sequence number size
-#define TESTING true        // makes prompts easier for us
-#define HEADER_SIZE sizeof(int)*3   // for use in sending and receiving
-#define BYTES_OF_PADDING 8  // 4 for the sequence number and 4 for the crc (both ints)
+#define PORT_NUMBER         9021            // Default port number
+#define WINDOW_SIZE         16              // Default window size
+#define PACKET_SIZE         1024            // Default packet size
+#define SEQUENCE_SIZE       64              // Default sequence number size
+#define TESTING             true            // makes prompts easier for us
+#define HEADER_SIZE         sizeof(int)*3   // for use in sending and receiving
+#define BYTES_OF_PADDING    8               // 4 for the sequence number and 4 for the crc (both ints)
+#define KILLCODE            20000000        // send this to the server so it knows the file is done (20 million)
 
 
 /* CRC generation code is modified from Michael Barr's open source code:
