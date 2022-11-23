@@ -125,7 +125,7 @@ int pingServer(string ip, int numPings)
 //returns the file descriptor for the socket if success, -1 if failure, and prints corresponding error message.
 int CreateSocketClient(int port, string ip)
 {
-	int sock = 0, client_fd;
+	int sock = 0;
         struct sockaddr_in serv_addr;
         
         sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -142,7 +142,7 @@ int CreateSocketClient(int port, string ip)
                 printf("\n Invalid address \n");
                 return -1;
         }
-        if((client_fd = connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) < 0) {
+        if((connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr))) < 0) {
                 printf("\nConnection Failed \n");
                 return -1;
         }
@@ -430,6 +430,9 @@ int main(int argc, char const *argv[]) {
                                 {
                                         lostPacketCount = 0;
                                 }
+
+                                cout << "Packet " << nextPacket.sequenceNum << " sent" << endl;
+                                
                        } else if ((corruptPacketCount !=0) && (nextPacket.globalPacketNumber == packetsToCorrupt[indexOfNextPacketToCorrupt]))
                        {
 
@@ -461,7 +464,7 @@ int main(int argc, char const *argv[]) {
                                         send(sock, tempPacket.payload, bufsize, 0); //sends the corrupted packet, but does timeout for the normal one.
                                         nextPacket.timeoutTime = chrono::high_resolution_clock::now() + timeout;
                                         cout << "Packet " << nextPacket.sequenceNum << " sent" << endl;
-                                        numOriginalPackets ++;
+                                        numOriginalPackets++;
                                         successfulBytesSent += bufsize;
                                 }
                        } else
@@ -475,7 +478,7 @@ int main(int argc, char const *argv[]) {
                                         cout << "Packet " << nextPacket.sequenceNum << " sent" << endl;
                                         //timeout variable from line 307
                                         nextPacket.timeoutTime = chrono::high_resolution_clock::now() + timeout;
-                                        numOriginalPackets ++;
+                                        numOriginalPackets++;
                                         successfulBytesSent += bufsize;
                                 }
                        }
@@ -553,7 +556,7 @@ int main(int argc, char const *argv[]) {
                                 send(sock, &resendBufsize, sizeof(resendBufsize), 0);
                                 send(sock, srpBuffer[index].payload, resendBufsize, 0);
                                 cout << "Packet " << srpBuffer[index].sequenceNum << " Re-transmitted" << endl;
-                                numResentPackets ++;
+                                numResentPackets++;
                                 successfulBytesSent += resendBufsize;
                                 attemptedBytesSent += resendBufsize;
 

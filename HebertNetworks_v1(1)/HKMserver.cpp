@@ -125,7 +125,7 @@ int main(int argc, char const *argv[]) {
 
         // client sends information on packetSize, windowSize, and sequenceNumSize
         recv(sock, headerRecv, HEADER_SIZE, 0);
-        int packetSize = headerRecv[0];
+        //int packetSize = headerRecv[0];
         int windowSize = headerRecv[1];
         int sequenceNumSize = headerRecv[2];
 
@@ -178,7 +178,7 @@ int main(int argc, char const *argv[]) {
                                 for(int i = 0; i < pktlen; i++){
                                         newPacket.message[i] = buffer[i];
                                 }
-                                totalNumPacketsRecieved ++;
+                                totalNumPacketsRecieved++;
                                 bool passedChecksum = false;
                                                                 
                                 crc crcFromClient = (((((unsigned int) newPacket.message[pktlen-4]) << 24) & 0xFF000000) | 
@@ -212,7 +212,7 @@ int main(int argc, char const *argv[]) {
                                                 weAreDone = true;
                                                 continue; 
                                         }else{
-                                        lastPacketSequenceNumber = packetSequenceNumber;
+                                                lastPacketSequenceNumber = packetSequenceNumber;
                                         }
                                         
                                         //above windowUpperBound or below windowLowerBound
