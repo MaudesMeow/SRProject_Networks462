@@ -27,7 +27,7 @@ archive:
 
 # create a zip file, then send it to poseidon server
 olivertoposeidon: archive
-	scp HKMSRP.zip mahano0661@poseidon1.cs.uwec.edu:/USERS/ALL/mahano0661/newCS462
+	scp HKMSRP.zip mahano0661@poseidon1.cs.uwec.edu:/USERS/ALL/mahano0661/newerCS462
 
 jordantoposeidon: archive
 	scp HKMSRP.zip hebertj4194@poseidon0.cs.uwec.edu:/USERS/ALL/HEBERTJ4194/CS462Test

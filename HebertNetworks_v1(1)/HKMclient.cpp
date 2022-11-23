@@ -483,7 +483,8 @@ int main(int argc, char const *argv[]) {
                         
                         // update the current sequence number
                         currentSequenceNum = (currentSequenceNum + 1) % (sequenceNumSize + 1);
-                }
+                
+                } // ugly if
 
                 int checkStatus;
                 ioctl(sock, FIONREAD, &checkStatus);
@@ -533,7 +534,7 @@ int main(int argc, char const *argv[]) {
                                 //we've recieved the ack for this packet, but it isn't the lowerbound one.
                                 srpBuffer[ackReceived].isAcked = true;
                         }
-                }
+                } // if checkstatus
 
                 //check for timeouts, and resend all packets that have timed out.
                 int index = windowLowerBound;
@@ -541,7 +542,7 @@ int main(int argc, char const *argv[]) {
                 while((index != windowUpperBound) && (index < globalPacketNumber)){
                         //if we timed out, resend packet from srpBuffer
                         if((srpBuffer[index].timeoutTime < timeNow) && !srpBuffer[index].isAcked && srpBuffer[index].isFull){
-                                cout << "packet " << nextPacket.globalPacketNumber-1 << " timed out." << endl;
+                                cout << "packet " << srpBuffer[index].globalPacketNumber-1 << " timed out." << endl;
                                 //cout << "packet " << index << " timed out." << endl;
                                 
                                 int resendBufsize = srpBuffer[index].packetBufSize;
@@ -593,9 +594,9 @@ int main(int argc, char const *argv[]) {
         cout << "Session Successfully Terminated" << endl;
         cout << "number of original packets: " << numOriginalPackets << endl;
         cout << "number of retransmitted packets: " << numResentPackets << endl;
-        cout << "total elapsed time: " timeDiffSeconds << " seconds." << endl;
+        cout << "total elapsed time: " << timeDiffSeconds << " seconds." << endl;
         cout << "total throughput (Mbps): " << attemptedMbSent/timeDiffSeconds << endl;
-        cout << "effective throughput: " << successfulBytesSent/timeDiffSeconds << endl;
+        cout << "effective throughput: " << successfulMbSent/timeDiffSeconds << endl;
 
         string verify = "md5sum " + fileName;
         system(verify.c_str());
