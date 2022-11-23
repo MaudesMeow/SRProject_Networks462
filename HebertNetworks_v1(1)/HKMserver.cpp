@@ -275,6 +275,7 @@ int main(int argc, char const *argv[]) {
                                                         //move the sliding window after effectively writing to the output file
                                                         windowLowerBound = (windowLowerBound+1) % (sequenceNumSize+1);
                                                         windowUpperBound = (windowUpperBound+1) % (sequenceNumSize+1);
+                                                        cout << "Current Window = [";
                                                         int windowSection = windowLowerBound;
                                                         while(windowSection != windowUpperBound){
                                                                 cout << windowSection << ", ";
