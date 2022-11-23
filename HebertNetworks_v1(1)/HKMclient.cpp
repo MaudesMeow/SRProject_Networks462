@@ -507,7 +507,7 @@ int main(int argc, char const *argv[]) {
                                 windowUpperBound = (windowUpperBound+1)%(sequenceNumSize+1);;
                                 cout << "Current Window = [";
                                 int i = windowLowerBound;
-                                while(windowLowerBound != windowUpperBound){
+                                while(i != windowUpperBound){
                                         cout << i << ", ";
                                         i = (i+1)%(sequenceNumSize+1);
                                 }
@@ -521,7 +521,7 @@ int main(int argc, char const *argv[]) {
                                         windowUpperBound = (windowUpperBound+1)%(sequenceNumSize+1);;
                                         cout << "Current Window = [";
                                         int i = windowLowerBound;
-                                        while(windowLowerBound != windowUpperBound){
+                                        while(i != windowUpperBound){
                                                 cout << i << ", ";
                                                 i = (i+1)%(sequenceNumSize+1);
                                         }
