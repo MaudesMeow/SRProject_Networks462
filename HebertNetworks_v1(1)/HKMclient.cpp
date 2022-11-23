@@ -520,7 +520,7 @@ int main(int argc, char const *argv[]) {
                 while(windowLowerBound != windowUpperBound){
                         //if we timed out, resend packet from srpBuffer
                         if(srpBuffer[index].timeoutTime < chrono::high_resolution_clock::now()){
-                                cout << "resending packet " << srpBuffer[index].globalPacketNumber;
+                                cout << "resending packet " << srpBuffer[index].globalPacketNumber << std::flush;
                                 int resendBufsize = srpBuffer[index].packetBufSize;
                                 cout << "bytes sent: " << resendBufsize << endl;
                                 send(sock, &resendBufsize, sizeof(resendBufsize), 0);
