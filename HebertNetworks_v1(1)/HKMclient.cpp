@@ -384,9 +384,7 @@ int main(int argc, char const *argv[]) {
         while(!readStream.eof()){
                 if(((windowLowerBound < windowUpperBound) && (currentSequenceNum <= windowUpperBound && currentSequenceNum >= windowLowerBound))
                 || ((windowLowerBound > windowUpperBound) && ((currentSequenceNum <= windowUpperBound) || (currentSequenceNum >= windowLowerBound)))){
-                        cout << "current sequence number: " << currentSequenceNum << endl;
 
-                        cout << "in the if" << endl;
                         globalPacketNumber++;
                         // create the next packet and add it to the sr buffer at the correct index
                         packet nextPacket;
@@ -448,9 +446,7 @@ int main(int argc, char const *argv[]) {
                                 tempPacket.isFull = true;
                                 
                                 char temp = tempPacket.payload[0];
-                                cout << "temp before change: " << temp << endl;
                                 tempPacket.payload[0] = ++temp; // makes sure this value gets changed
-                                cout << "temp after change: " << temp << endl;
                                 indexOfNextPacketToCorrupt++;
 
                                 if (indexOfNextPacketToCorrupt == corruptPacketCount)
@@ -464,7 +460,7 @@ int main(int argc, char const *argv[]) {
                                         send(sock, &bufsize, sizeof(bufsize), 0);
                                         send(sock, tempPacket.payload, bufsize, 0); //sends the corrupted packet, but does timeout for the normal one.
                                         nextPacket.timeoutTime = chrono::high_resolution_clock::now() + timeout;
-                                        cout << "packet " << nextPacket.sequenceNum << " sent" << endl;
+                                        cout << "Packet " << nextPacket.sequenceNum << " sent" << endl;
                                         numOriginalPackets ++;
                                         successfulBytesSent += bufsize;
                                 }
@@ -476,7 +472,7 @@ int main(int argc, char const *argv[]) {
                                         //cout << "sending packet " << nextPacket.globalPacketNumber << endl;
                                         send(sock, &bufsize, sizeof(bufsize), 0);
                                         send(sock, nextPacket.payload, bufsize, 0);
-                                        cout << "packet " << nextPacket.sequenceNum << " sent" << endl;
+                                        cout << "Packet " << nextPacket.sequenceNum << " sent" << endl;
                                         //timeout variable from line 307
                                         nextPacket.timeoutTime = chrono::high_resolution_clock::now() + timeout;
                                         numOriginalPackets ++;
@@ -501,7 +497,7 @@ int main(int argc, char const *argv[]) {
                         int ackReceived;
                         recv(sock, &ackReceived, sizeof(ackReceived), 0);
 
-                        cout << "ack " << ackReceived << " received.\n\n" << endl;
+                        cout << "Ack " << ackReceived << " received" << endl;
 
                         //if we recieved an ack for the lower bound of our window, we need to make sure we aren't waiting on stuff anymore.
                         if(ackReceived == windowLowerBound){
@@ -548,7 +544,7 @@ int main(int argc, char const *argv[]) {
                 while((index != windowUpperBound) && (index < globalPacketNumber)){
                         //if we timed out, resend packet from srpBuffer
                         if((srpBuffer[index].timeoutTime < timeNow) && !srpBuffer[index].isAcked && srpBuffer[index].isFull){
-                                cout << "packet " << srpBuffer[index].sequenceNum << " timed out." << endl;
+                                cout << "Packet " << srpBuffer[index].sequenceNum << " *****Timed Out*****" << endl;
                                 //cout << "packet " << index << " timed out." << endl;
                                 
                                 int resendBufsize = srpBuffer[index].packetBufSize;
@@ -556,7 +552,7 @@ int main(int argc, char const *argv[]) {
 
                                 send(sock, &resendBufsize, sizeof(resendBufsize), 0);
                                 send(sock, srpBuffer[index].payload, resendBufsize, 0);
-                                cout << "packet " << srpBuffer[index].sequenceNum << " retransmitted" << endl;
+                                cout << "Packet " << srpBuffer[index].sequenceNum << " Re-transmitted" << endl;
                                 numResentPackets ++;
                                 successfulBytesSent += resendBufsize;
                                 attemptedBytesSent += resendBufsize;
@@ -597,12 +593,12 @@ int main(int argc, char const *argv[]) {
 
         //nanoseconds are 
         //we're done sending packets. finish everything up.
-        cout << "Session Successfully Terminated" << endl;
-        cout << "number of original packets: " << numOriginalPackets << endl;
-        cout << "number of retransmitted packets: " << numResentPackets << endl;
-        cout << "total elapsed time: " << timeDiffSeconds << " seconds." << endl;
-        cout << "total throughput (Mbps): " << attemptedMbSent/timeDiffSeconds << endl;
-        cout << "effective throughput (Mbps): " << successfulMbSent/timeDiffSeconds << endl;
+        cout << "Session Successfully Terminated\n" << endl;
+        cout << "Number of original packets: " << numOriginalPackets << endl;
+        cout << "Number of retransmitted packets: " << numResentPackets << endl;
+        cout << "Total elapsed time: " << timeDiffSeconds << " seconds." << endl;
+        cout << "Total throughput (Mbps): " << attemptedMbSent/timeDiffSeconds << endl;
+        cout << "Effective throughput (Mbps): " << successfulMbSent/timeDiffSeconds << "\n" << endl;
 
         string verify = "md5sum " + fileName;
         system(verify.c_str());

@@ -117,7 +117,7 @@ int main(int argc, char const *argv[]) {
 
         sort(acksToLose, acksToLose+ackCount); // our acks to lose array is sorted.
                 
-        cout << "waiting on connection from client..." << endl;
+        cout << "Waiting on connection from client..." << endl;
 	int sock = CreateSocketServer(portNumber);
 
         
@@ -189,7 +189,6 @@ int main(int argc, char const *argv[]) {
                                 if (crcFromClient == crcCalculated)
                                 {
                                         passedChecksum = true;
-                                        cout << "Checksum OK" << endl;
                                 } else {
                                         cout << "Checksum failed" << endl;
 
@@ -246,7 +245,7 @@ int main(int argc, char const *argv[]) {
 
                                                 numOfPackets++;
                                                 //prints to console which packet was recieved.
-                                                cout << "Packet " << packetSequenceNumber << " received: " << endl;
+                                                cout << "Packet " << packetSequenceNumber << " received" << endl;
 
                                                 // we need to not send this ack because it matches the next one in our array
                                                 if ((ackCount != 0) && (packetSequenceNumber == acksToLose[indexOfNextAckToLose])) 
