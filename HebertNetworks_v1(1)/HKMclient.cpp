@@ -383,8 +383,9 @@ int main(int argc, char const *argv[]) {
         chrono::high_resolution_clock::time_point startTime = chrono::high_resolution_clock::now();
         while(!readStream.eof()){
                 if(((windowLowerBound < windowUpperBound) && (currentSequenceNum <= windowUpperBound && currentSequenceNum >= windowLowerBound))
-                || (currentSequenceNum > windowUpperBound && currentSequenceNum < windowLowerBound)){
-                        
+                || ((windowLowerBound > windowUpperBound) && ((currentSequenceNum <= windowUpperBound) || (currentSequenceNum >= windowLowerBound)))){
+                        cout << "current sequence number: " << currentSequenceNum << endl;
+
                         cout << "in the if" << endl;
                         globalPacketNumber++;
                         // create the next packet and add it to the sr buffer at the correct index
@@ -547,7 +548,7 @@ int main(int argc, char const *argv[]) {
                 while((index != windowUpperBound) && (index < globalPacketNumber)){
                         //if we timed out, resend packet from srpBuffer
                         if((srpBuffer[index].timeoutTime < timeNow) && !srpBuffer[index].isAcked && srpBuffer[index].isFull){
-                                cout << "packet " << srpBuffer[index].globalPacketNumber-1 << " timed out." << endl;
+                                cout << "packet " << srpBuffer[index].sequenceNum << " timed out." << endl;
                                 //cout << "packet " << index << " timed out." << endl;
                                 
                                 int resendBufsize = srpBuffer[index].packetBufSize;
@@ -601,7 +602,7 @@ int main(int argc, char const *argv[]) {
         cout << "number of retransmitted packets: " << numResentPackets << endl;
         cout << "total elapsed time: " << timeDiffSeconds << " seconds." << endl;
         cout << "total throughput (Mbps): " << attemptedMbSent/timeDiffSeconds << endl;
-        cout << "effective throughput: " << successfulMbSent/timeDiffSeconds << endl;
+        cout << "effective throughput (Mbps): " << successfulMbSent/timeDiffSeconds << endl;
 
         string verify = "md5sum " + fileName;
         system(verify.c_str());
