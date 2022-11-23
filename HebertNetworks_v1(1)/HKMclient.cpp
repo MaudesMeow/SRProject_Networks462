@@ -521,8 +521,8 @@ int main(int argc, char const *argv[]) {
                         //if we timed out, resend packet from srpBuffer
                         if(srpBuffer[index].timeoutTime < chrono::high_resolution_clock::now()){
                                 cout << "resending packet " << srpBuffer[index].globalPacketNumber;
-                                cout << "bytes sent: " << bufsize << endl;
                                 int resendBufsize = srpBuffer[index].packetBufSize;
+                                cout << "bytes sent: " << resendBufsize << endl;
                                 send(sock, &resendBufsize, sizeof(resendBufsize), 0);
                                 send(sock, srpBuffer[index].payload, resendBufsize, 0);
                                 srpBuffer[index].timeoutTime = chrono::high_resolution_clock::now() + timeout; //timeout variable from line 307
