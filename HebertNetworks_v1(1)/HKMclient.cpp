@@ -155,15 +155,15 @@ void sendKillswitch(int sock)
         packet killswitch;
         killswitch.payload = new char[7 + BYTES_OF_PADDING]();
         // putting the sequence number at the front of the packet
-        killswitch.payload[0] = (char) ((-1 & 0xFF000000) >> 24); 
-        killswitch.payload[1] = (char) ((-1 & 0x00FF0000) >> 16);
-        killswitch.payload[2] = (char) ((-1 & 0x0000FF00) >> 8);
-        killswitch.payload[3] = (char)  (-1 & 0x000000FF);
+        killswitch.payload[0] = (char) ((20000000 & 0xFF000000) >> 24); 
+        killswitch.payload[1] = (char) ((20000000 & 0x00FF0000) >> 16);
+        killswitch.payload[2] = (char) ((20000000 & 0x0000FF00) >> 8);
+        killswitch.payload[3] = (char)  (20000000 & 0x000000FF);
 
         killswitch.payload[sizeof(int)] = 'b';
         killswitch.payload[sizeof(int) + 1] = 'y';
 
-        for (int i = 2; i < 5; i++)
+        for (int i = 2; i < 7; i++)
         {
                 killswitch.payload[i + sizeof(int)] = 'e';
         }
