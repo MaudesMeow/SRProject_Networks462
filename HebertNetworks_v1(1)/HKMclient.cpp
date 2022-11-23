@@ -524,7 +524,7 @@ int main(int argc, char const *argv[]) {
                                         windowSection = windowLowerBound;
                                         while(windowSection != windowUpperBound){
                                                 cout << windowSection << ", ";
-                                                windowSection = (i+1)%(sequenceNumSize+1);
+                                                windowSection = (windowSection+1)%(sequenceNumSize+1);
                                         }
                                         cout << windowUpperBound << "]" << endl;
                                         
