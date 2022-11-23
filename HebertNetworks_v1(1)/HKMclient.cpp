@@ -447,7 +447,9 @@ int main(int argc, char const *argv[]) {
                                 tempPacket.isFull = true;
                                 
                                 char temp = tempPacket.payload[0];
-                                tempPacket.payload[0] = temp++; // makes sure this value gets changed
+                                cout << "temp before change: " << temp << endl;
+                                tempPacket.payload[0] = ++temp; // makes sure this value gets changed
+                                cout << "temp after change: " << temp endl;
                                 indexOfNextPacketToCorrupt++;
 
                                 if (indexOfNextPacketToCorrupt == corruptPacketCount)
@@ -458,8 +460,7 @@ int main(int argc, char const *argv[]) {
                                 //if payload is bigger than just the sequence number and crc, we have a packet to send.
                                 //send the packet and its size to the server, and tell the user we did it.
                                 if(bufsize > BYTES_OF_PADDING){
-                                        //cout << "sending packet " << nextPacket.globalPacketNumber << endl;
-                                        send(sock, &bufsize, sizeof(bufsize), 0);
+\                                       send(sock, &bufsize, sizeof(bufsize), 0);
                                         send(sock, tempPacket.payload, bufsize, 0); //sends the corrupted packet, but does timeout for the normal one.
                                         nextPacket.timeoutTime = chrono::high_resolution_clock::now() + timeout;
                                         cout << "packet " << nextPacket.sequenceNum << " sent" << endl;
