@@ -513,8 +513,6 @@ int main(int argc, char const *argv[]) {
                                         windowSection = (windowSection+1)%(sequenceNumSize+1);
                                 }
                                 cout << windowUpperBound << "]" << endl;
-                                windowLowerBound = (windowLowerBound +1) % (sequenceNumSize +1);
-                                windowUpperBound = (windowUpperBound +1) % (sequenceNumSize +1);
 
                                 //make sure we move the window to compensate for all other previously recieved acks for packets that we've recorded.
                                 while(srpBuffer[windowLowerBound].isAcked && srpBuffer[windowLowerBound].isFull){
@@ -529,8 +527,6 @@ int main(int argc, char const *argv[]) {
                                                 windowSection = (windowSection+1)%(sequenceNumSize+1);
                                         }
                                         cout << windowUpperBound << "]" << endl;
-                                        windowLowerBound = (windowLowerBound +1) % (sequenceNumSize +1);
-                                        windowUpperBound = (windowUpperBound +1) % (sequenceNumSize +1);
                                         
                                 }
 
@@ -551,10 +547,6 @@ int main(int argc, char const *argv[]) {
                                 
                                 int resendBufsize = srpBuffer[index].packetBufSize;
                                 //cout << "bytes sent: " << resendBufsize << endl;
-                        if(srpBuffer[index].timeoutTime < chrono::high_resolution_clock::now()){
-                                cout << "resending packet " << srpBuffer[index].globalPacketNumber << std::flush;
-                                int resendBufsize = srpBuffer[index].packetBufSize;
-                                cout << "bytes sent: " << resendBufsize << endl;
 
                                 send(sock, &resendBufsize, sizeof(resendBufsize), 0);
                                 send(sock, srpBuffer[index].payload, resendBufsize, 0);
